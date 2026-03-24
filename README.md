@@ -40,7 +40,7 @@ SmartVehicular-Project/
 ## Running a simulation
 
 ```bash
-python scripts/run_simulation.py --config config/config.yaml
+python src/run_simulation.py --config config/config.yaml
 ```
 
 ## Running tests
