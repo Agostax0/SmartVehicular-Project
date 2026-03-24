@@ -19,8 +19,6 @@ SmartVehicular-Project/
 │   └── config.yaml
 ├── data/
 │   └── output/              # Simulation artefacts (images, logs)
-├── scripts/
-│   └── run_simulation.py    # Main entry-point to launch a simulation
 ├── src/
 │   ├── agents/              # Autonomous driving agents
 │   │   └── base_agent.py
@@ -28,8 +26,9 @@ SmartVehicular-Project/
 │   │   └── vehicle_controller.py
 │   ├── sensors/             # Sensor management (camera, lidar, …)
 │   │   └── sensor_manager.py
-│   └── utils/               # Shared utilities (logging, …)
-│       └── logger.py
+│   ├── utils/               # Shared utilities (logging, …)
+│   |   └── logger.py
+|   └── run_simulation.py    # Main entry-point to launch a simulation
 ├── tests/                   # Unit tests (pytest)
 │   └── test_utils.py
 ├── .gitignore
