@@ -1,0 +1,30 @@
+carla:
+  host: "localhost"
+  port: 2000
+  timeout: 10.0
+  map: "Town03"
+
+vehicle:
+  blueprint: "vehicle.tesla.model3"
+  spawn_point: null  # null = random spawn
+
+simulation:
+  max_steps: 1000
+  fps: 20
+  sync_mode: true
+
+sensors:
+  camera:
+    enabled: true
+    width: 800
+    height: 600
+    fov: 90
+  lidar:
+    enabled: false
+    channels: 32
+    range: 50.0
+    points_per_second: 100000
+
+output:
+  directory: "data/output"
+  save_images: false

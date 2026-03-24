@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+carla-env/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Output data (keep folder, ignore contents)
+data/output/*
+!data/output/.gitkeep
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
