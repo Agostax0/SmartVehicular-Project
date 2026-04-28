@@ -59,6 +59,22 @@ def main():
         vehicle = world.spawn_actor(v_bp, spawn_point)
         logger.info("Vehicle spawned: %s", vehicle.type_id)
         
+        # 3b. Spawn Pedestrian in front of the vehicle
+        p_bp = blueprint_library.filter("walker.pedestrian.*")[0] # Pick a random pedestrian
+        
+        # Calculate position 10 meters in front of the vehicle
+        v_transform = vehicle.get_transform()
+        forward_vector = v_transform.get_forward_vector()
+        p_location = v_transform.location + carla.Location(
+            x=forward_vector.x * 10,
+            y=forward_vector.y * 10,
+            z=forward_vector.z + 1.0 # Spawn slightly above ground to avoid collision with floor
+        )
+        p_transform = carla.Transform(p_location, v_transform.rotation)
+        
+        walker = world.spawn_actor(p_bp, p_transform)
+        logger.info("Pedestrian spawned in front of the vehicle: %s", walker.type_id)
+        
         # 4. Setup Sensors
         sensor_manager = SensorManager(world, vehicle)
         
@@ -104,6 +120,8 @@ def main():
             visualizer.close()
         if 'sensor_manager' in locals():
             sensor_manager.destroy()
+        if 'walker' in locals():
+            walker.destroy()
         if 'vehicle' in locals():
             vehicle.destroy()
 
