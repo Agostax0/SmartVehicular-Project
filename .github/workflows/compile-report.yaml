@@ -1,0 +1,12 @@
+name: Build LaTeX and deploy on GitHub Releases
+on:
+  push:
+    branches:
+      - 'main'
+jobs:
+  Setup-Compile-Deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: DanySK/compile-and-publish-all-latex@2.0.61
+        with:
+          token: ${{ secrets.GH_TOKEN }}
