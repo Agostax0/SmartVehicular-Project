@@ -43,7 +43,14 @@ def main():
     
     try:
         world = client.get_world()
-        logger.info("Connected to CARLA: %s", world.get_map().name)
+        
+        # Enable Synchronous Mode
+        settings = world.get_settings()
+        settings.synchronous_mode = True
+        settings.fixed_delta_seconds = 1.0 / config["simulation"].get("fps", 20)
+        world.apply_settings(settings)
+        
+        logger.info("Connected to CARLA and enabled sync mode: %s", world.get_map().name)
         
         # 2. Setup Components
         detector = ObjectDetector()
@@ -55,25 +62,57 @@ def main():
         # 3. Spawn Vehicle
         blueprint_library = world.get_blueprint_library()
         v_bp = blueprint_library.find(config["vehicle"]["blueprint"])
-        spawn_point = world.get_map().get_spawn_points()[0]
-        vehicle = world.spawn_actor(v_bp, spawn_point)
-        logger.info("Vehicle spawned: %s", vehicle.type_id)
+        spawn_points = world.get_map().get_spawn_points()
+        vehicle = None
+        for sp in spawn_points:
+            vehicle = world.try_spawn_actor(v_bp, sp)
+            if vehicle is not None:
+                spawn_point = sp
+                break
         
-        # 3b. Spawn Pedestrian in front of the vehicle
-        p_bp = blueprint_library.filter("walker.pedestrian.*")[0] # Pick a random pedestrian
+        if vehicle is None:
+            logger.error("Failed to spawn vehicle at any available spawn point")
+            return
+        logger.info("Vehicle spawned: %s at %s", vehicle.type_id, spawn_point.location)
         
-        # Calculate position 10 meters in front of the vehicle
-        v_transform = vehicle.get_transform()
-        forward_vector = v_transform.get_forward_vector()
-        p_location = v_transform.location + carla.Location(
-            x=forward_vector.x * 10,
-            y=forward_vector.y * 10,
-            z=forward_vector.z + 1.0 # Spawn slightly above ground to avoid collision with floor
-        )
-        p_transform = carla.Transform(p_location, v_transform.rotation)
+        # --- PARAMETRI DI SPAWN PEDONE ---
+        distanza_dal_veicolo = 2.0  # Molto vicino al muso per restare in strada
+        altezza_iniziale = 1.0
+        spawn_laterale = -2.0
+        # ----------------------------------
+
+        p_bp = blueprint_library.filter("walker.pedestrian.*")[0]
+        if p_bp.has_attribute('is_invincible'):
+            p_bp.set_attribute('is_invincible', 'true')
         
-        walker = world.spawn_actor(p_bp, p_transform)
-        logger.info("Pedestrian spawned in front of the vehicle: %s", walker.type_id)
+        # Usiamo direttamente il punto di spawn del veicolo per il calcolo
+        v_location = spawn_point.location
+        v_rotation = spawn_point.rotation
+        forward_vector = v_rotation.get_forward_vector()
+        right_vector = v_rotation.get_right_vector()
+        
+        # Calcolo posizione davanti all'auto
+        p_location = v_location + forward_vector * distanza_dal_veicolo + right_vector * spawn_laterale
+        p_rotation = v_rotation
+        p_rotation.yaw += 90
+        
+        walker = None
+        walker1 = None
+        for offset in [0.0, 0.5, 1.0, 1.5]:
+            p_location.z = v_location.z + altezza_iniziale + offset
+            p_transform = carla.Transform(p_location, p_rotation)
+            walker = world.try_spawn_actor(p_bp, p_transform)
+            walker1 = world.try_spawn_actor(p_bp, carla.Transform(v_location + forward_vector * distanza_dal_veicolo, p_rotation))
+            if walker is not None:
+                break
+                
+        if walker is None:
+            logger.warning("Impossibile spawnare il pedone.")
+        else:
+            logger.info("Pedone spawnato a %s metri dal punto di spawn auto: %s", distanza_dal_veicolo, p_transform.location)
+            direction = p_transform.get_forward_vector()
+            walker.apply_control(carla.WalkerControl(direction=direction, speed = 1.4))
+            walker1.apply_control(carla.WalkerControl(direction=direction, speed = 1.4))
         
         # 4. Setup Sensors
         sensor_manager = SensorManager(world, vehicle)
@@ -105,7 +144,7 @@ def main():
         # 5. Simulation Loop
         logger.info("Starting simulation loop. Press Ctrl+C or close window to stop.")
         while True:
-            world.wait_for_tick()
+            world.tick()
             
             # Update visualizer from main thread
             if state.frame is not None:
@@ -116,12 +155,21 @@ def main():
         logger.info("Simulation stopped by user.")
     finally:
         logger.info("Cleaning up actors...")
+        
+        # Disable Sync Mode
+        if 'world' in locals():
+            settings = world.get_settings()
+            settings.synchronous_mode = False
+            settings.fixed_delta_seconds = None
+            world.apply_settings(settings)
+            
         if 'visualizer' in locals():
             visualizer.close()
         if 'sensor_manager' in locals():
             sensor_manager.destroy()
         if 'walker' in locals():
             walker.destroy()
+            walker1.destroy()
         if 'vehicle' in locals():
             vehicle.destroy()
 
