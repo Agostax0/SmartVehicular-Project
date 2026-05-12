@@ -76,7 +76,7 @@ def main():
         logger.info("Vehicle spawned: %s at %s", vehicle.type_id, spawn_point.location)
         
         # --- PARAMETRI DI SPAWN PEDONE ---
-        distanza_dal_veicolo = 2.0  # Molto vicino al muso per restare in strada
+        distanza_dal_veicolo = 8.0  # Molto vicino al muso per restare in strada
         altezza_iniziale = 1.0
         spawn_laterale = -2.0
         # ----------------------------------
@@ -92,7 +92,7 @@ def main():
         right_vector = v_rotation.get_right_vector()
         
         # Calcolo posizione davanti all'auto
-        p_location = v_location + forward_vector * distanza_dal_veicolo + right_vector * spawn_laterale
+        p_location = v_location + forward_vector * (distanza_dal_veicolo - 2) + right_vector * spawn_laterale
         p_rotation = v_rotation
         p_rotation.yaw += 90
         
@@ -102,7 +102,9 @@ def main():
             p_location.z = v_location.z + altezza_iniziale + offset
             p_transform = carla.Transform(p_location, p_rotation)
             walker = world.try_spawn_actor(p_bp, p_transform)
-            walker1 = world.try_spawn_actor(p_bp, carla.Transform(v_location + forward_vector * distanza_dal_veicolo, p_rotation))
+            p1_rotation = v_rotation
+            p1_rotation.yaw += 180
+            walker1 = world.try_spawn_actor(p_bp, carla.Transform(v_location + forward_vector * distanza_dal_veicolo, p1_rotation))
             if walker is not None:
                 break
                 
@@ -111,8 +113,9 @@ def main():
         else:
             logger.info("Pedone spawnato a %s metri dal punto di spawn auto: %s", distanza_dal_veicolo, p_transform.location)
             direction = p_transform.get_forward_vector()
+            d1 = carla.Vector3D(-direction.x, -direction.y, -direction.z)
             walker.apply_control(carla.WalkerControl(direction=direction, speed = 1.4))
-            walker1.apply_control(carla.WalkerControl(direction=direction, speed = 1.4))
+            walker1.apply_control(carla.WalkerControl(direction=d1, speed = 1.4))
         
         # 4. Setup Sensors
         sensor_manager = SensorManager(world, vehicle)
