@@ -22,29 +22,45 @@ class Visualizer:
         self.font = pygame.font.SysFont('Arial', 18)
         logger.info("Visualizer initialised: %dx%d", width, height)
 
-    def update(self, image, results=None):
+    def update(self, image, results=None, kalman_predictions=None):
         """
         Update the display with a new frame and optional detection results.
         
         Args:
             image (numpy.ndarray): RGB image array.
             results: Results object from YOLOv8 detector.
+            kalman_predictions (dict): Dictionary of predicted boxes.
         """
-        # 1. Convert image to pygame surface
-        # YOLO results.plot() returns BGR by default if used, 
-        # but here we'll draw manually or use the plotted frame
-        if results is not None:
-            # results.plot() returns a BGR image with boxes drawn
-            plotted_frame = results.plot()
-            # BGR to RGB
-            rgb_frame = plotted_frame[:, :, ::-1]
-        else:
-            rgb_frame = image
-
-        # 2. Reshape/Transpose if necessary for pygame (W, H, 3)
-        surface = pygame.surfarray.make_surface(rgb_frame.swapaxes(0, 1))
+        # 1. Convertiamo l'immagine in superficie Pygame
+        surface = pygame.surfarray.make_surface(image.swapaxes(0, 1))
         
-        # 3. Blit and update
+        # 2. Colore per YOLO (Verde) e per Kalman (Arancione)
+        color_yolo = (0, 255, 0)
+        color_kalman = (255, 165, 0)
+
+        if results is not None:
+            for i, box in enumerate(results.boxes):
+                # Box originale YOLO
+                coords = box.xyxy[0].tolist()
+                rect = pygame.Rect(coords[0], coords[1], coords[2]-coords[0], coords[3]-coords[1])
+                pygame.draw.rect(surface, color_yolo, rect, 2)
+                
+                label = f"{results.names[int(box.cls[0])]} {float(box.conf[0]):.2f}"
+                text_surface = self.font.render(label, True, color_yolo)
+                surface.blit(text_surface, (coords[0], coords[1] - 22))
+                
+                # Box prevista da Kalman (se abbiamo l'ID)
+                if kalman_predictions and results.boxes.id is not None:
+                    obj_id = int(results.boxes.id[i])
+                    if obj_id in kalman_predictions:
+                        p_coords = kalman_predictions[obj_id]
+                        p_rect = pygame.Rect(p_coords[0], p_coords[1], p_coords[2]-p_coords[0], p_coords[3]-p_coords[1])
+                        pygame.draw.rect(surface, color_kalman, p_rect, 2)
+                        
+                        p_text = self.font.render("Kalman Prediction", True, color_kalman)
+                        surface.blit(p_text, (p_coords[0], p_coords[3] + 5))
+
+        # 3. Blit e update
         self.display.blit(surface, (0, 0))
         pygame.display.flip()
         

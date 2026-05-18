@@ -5,6 +5,7 @@ import numpy as np
 import time
 
 from utils.logger import get_logger
+from utils.kalman import TrajectoryKalmanFilter
 from utils.detector import ObjectDetector
 from utils.visualizer import Visualizer
 from sensors.sensor_manager import SensorManager
@@ -22,6 +23,7 @@ class SimulationState:
     def __init__(self):
         self.frame = None
         self.results = None
+        self.kalman_predictions = None
 
 state = SimulationState()
 
@@ -138,9 +140,44 @@ def main():
             # Run detection
             results = detector.detect(rgb_array)
             
+            # Kalman Filter Processing
+            predictions = {}
+            if results and results.boxes and results.boxes.id is not None:
+                for i, box in enumerate(results.boxes):
+                    obj_id = int(results.boxes.id[i])
+                    coords = box.xyxy[0].tolist() # [x1, y1, x2, y2]
+                    
+                    x1, y1, x2, y2 = coords
+                    cx = (x1 + x2) / 2.0
+                    cy = (y1 + y2) / 2.0
+                    w = x2 - x1
+                    h = y2 - y1
+                    
+                    if obj_id not in state.kalman_filters:
+                        # Usiamo il tuo filtro originale passandogli i pixel (cx, cy) al posto di (X, Z) in metri
+                        state.kalman_filters[obj_id] = TrajectoryKalmanFilter(dt=1.0/config["simulation"].get("fps", 20))
+                    
+                    # Passiamo cx come X e cy come Z
+                    est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(cx, cy)
+                    
+                    # Calcoliamo la box futura (estrapoliamo di 5 frame per vederla meglio a schermo)
+                    future_frames = 5
+                    pred_cx = est_x + vel_x * state.kalman_filters[obj_id].dt * future_frames
+                    pred_cy = est_z + vel_z * state.kalman_filters[obj_id].dt * future_frames
+                    
+                    pred_box = [
+                        pred_cx - w / 2.0,
+                        pred_cy - h / 2.0,
+                        pred_cx + w / 2.0,
+                        pred_cy + h / 2.0
+                    ]
+                    
+                    predictions[obj_id] = pred_box
+            
             # Update shared state
             state.frame = rgb_array
             state.results = results
+            state.kalman_predictions = predictions
 
         camera.listen(lambda image: camera_callback(image))
         
@@ -151,7 +188,7 @@ def main():
             
             # Update visualizer from main thread
             if state.frame is not None:
-                if not visualizer.update(state.frame, state.results):
+                if not visualizer.update(state.frame, state.results, state.kalman_predictions):
                     break
             
     except KeyboardInterrupt:
