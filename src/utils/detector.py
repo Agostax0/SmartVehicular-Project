@@ -32,9 +32,8 @@ class ObjectDetector:
         Returns:
             ultralytics.engine.results.Results: Detection results.
         """
-        # Run inference
-        # stream=True can be used for better memory management in video loops
-        results = self.model.predict(image, classes=self.target_classes, verbose=False)
+        # Usiamo track invece di predict per avere gli ID degli oggetti (necessari per Kalman)
+        results = self.model.track(image, classes=self.target_classes, persist=True, verbose=False)
         return results[0]
 
     def get_detected_objects(self, results):
