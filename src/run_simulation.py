@@ -24,6 +24,7 @@ class SimulationState:
         self.frame = None
         self.results = None
         self.kalman_predictions = None
+        self.kalman_filters = {}
 
 state = SimulationState()
 
@@ -160,10 +161,11 @@ def main():
                     # Passiamo cx come X e cy come Z
                     est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(cx, cy)
                     
-                    # Calcoliamo la box futura (estrapoliamo di 5 frame per vederla meglio a schermo)
-                    future_frames = 5
-                    pred_cx = est_x + vel_x * state.kalman_filters[obj_id].dt * future_frames
-                    pred_cy = est_z + vel_z * state.kalman_filters[obj_id].dt * future_frames
+                    # Calcoliamo la box futura (estrapoliamo di 20 frame, circa 1.0s a 20 FPS, per vederla molto più avanti)
+                    future_frames = 50
+                    dt = state.kalman_filters[obj_id].dt
+                    pred_cx = est_x + vel_x * dt * future_frames
+                    pred_cy = est_z + vel_z * dt * future_frames
                     
                     pred_box = [
                         pred_cx - w / 2.0,
@@ -172,7 +174,17 @@ def main():
                         pred_cy + h / 2.0
                     ]
                     
-                    predictions[obj_id] = pred_box
+                    # Generiamo una serie di punti intermedi per disegnare la traiettoria
+                    trajectory = []
+                    for f in range(2, future_frames + 1, 2):
+                        pt_cx = est_x + vel_x * dt * f
+                        pt_cy = est_z + vel_z * dt * f
+                        trajectory.append((pt_cx, pt_cy))
+                    
+                    predictions[obj_id] = {
+                        "box": pred_box,
+                        "trajectory": trajectory
+                    }
             
             # Update shared state
             state.frame = rgb_array
