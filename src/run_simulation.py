@@ -136,7 +136,9 @@ def main():
             # Convert raw data to numpy array
             array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
             array = np.reshape(array, (image.height, image.width, 4))
-            rgb_array = array[:, :, :3]
+            # CARLA camera raw data is in BGRA format. Slicing array[:, :, :3] gives BGR.
+            # We convert BGR to RGB by reversing the channels along the third axis.
+            rgb_array = array[:, :, :3][:, :, ::-1]
             
             # Run detection
             results = detector.detect(rgb_array)
