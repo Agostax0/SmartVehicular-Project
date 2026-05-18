@@ -1,10 +1,11 @@
 future
-numpy; python_version < '3.0'
-numpy==1.18.4; python_version >= '3.0'
+numpy
 pygame
 matplotlib
 open3d
 Pillow
 pyyaml
 pytest
-ultralytics
+ultralytics==8.0.145
+carla==0.9.15
+lapx==0.9.4
