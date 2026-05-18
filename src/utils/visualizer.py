@@ -49,16 +49,40 @@ class Visualizer:
                 text_surface = self.font.render(label, True, color_yolo)
                 surface.blit(text_surface, (coords[0], coords[1] - 22))
                 
-                # Box prevista da Kalman (se abbiamo l'ID)
+                # Box e traiettoria prevista da Kalman (se abbiamo l'ID)
                 if kalman_predictions and results.boxes.id is not None:
                     obj_id = int(results.boxes.id[i])
                     if obj_id in kalman_predictions:
-                        p_coords = kalman_predictions[obj_id]
+                        pred_data = kalman_predictions[obj_id]
+                        if isinstance(pred_data, dict):
+                            p_coords = pred_data["box"]
+                            trajectory = pred_data.get("trajectory", [])
+                        else:
+                            p_coords = pred_data
+                            trajectory = []
+                        
+                        # Draw the prediction box
                         p_rect = pygame.Rect(p_coords[0], p_coords[1], p_coords[2]-p_coords[0], p_coords[3]-p_coords[1])
                         pygame.draw.rect(surface, color_kalman, p_rect, 2)
                         
-                        p_text = self.font.render("Kalman Prediction", True, color_kalman)
+                        p_text = self.font.render("Kalman Prediction (+1.0s)", True, color_kalman)
                         surface.blit(p_text, (p_coords[0], p_coords[3] + 5))
+                        
+                        # Draw prediction trajectory points and connect them
+                        if len(trajectory) > 0:
+                            # Draw path lines
+                            path_points = [(int(cx), int(cy)) for cx, cy in trajectory]
+                            # Add the current center of the YOLO detection to start the trajectory line
+                            yolo_cx = int((coords[0] + coords[2]) / 2.0)
+                            yolo_cy = int((coords[1] + coords[3]) / 2.0)
+                            path_points.insert(0, (yolo_cx, yolo_cy))
+                            
+                            if len(path_points) > 1:
+                                pygame.draw.lines(surface, color_kalman, False, path_points, 1)
+                            
+                            # Draw dot at each predicted point
+                            for pt in trajectory:
+                                pygame.draw.circle(surface, color_kalman, (int(pt[0]), int(pt[1])), 3)
 
         # 3. Blit e update
         self.display.blit(surface, (0, 0))
