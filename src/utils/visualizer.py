@@ -57,15 +57,17 @@ class Visualizer:
                         if isinstance(pred_data, dict):
                             p_coords = pred_data["box"]
                             trajectory = pred_data.get("trajectory", [])
+                            time_horizon = pred_data.get("time_horizon", 1.0)
                         else:
                             p_coords = pred_data
                             trajectory = []
+                            time_horizon = 1.0
                         
                         # Draw the prediction box
                         p_rect = pygame.Rect(p_coords[0], p_coords[1], p_coords[2]-p_coords[0], p_coords[3]-p_coords[1])
                         pygame.draw.rect(surface, color_kalman, p_rect, 2)
                         
-                        p_text = self.font.render("Kalman Prediction (+1.0s)", True, color_kalman)
+                        p_text = self.font.render(f"Kalman Prediction (+{time_horizon:.1f}s)", True, color_kalman)
                         surface.blit(p_text, (p_coords[0], p_coords[3] + 5))
                         
                         # Draw prediction trajectory points and connect them
