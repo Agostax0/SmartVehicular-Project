@@ -22,18 +22,19 @@ class ObjectDetector:
         # COCO class IDs: 0: person, 1: bicycle, 3: motorcycle
         self.target_classes = [0, 1, 3] 
 
-    def detect(self, image):
+    def detect(self, image, conf=0.20):
         """
         Perform detection on a single image.
         
         Args:
             image (numpy.ndarray): RGB image as a NumPy array.
+            conf (float): Confidence threshold for tracking/detection.
             
         Returns:
             ultralytics.engine.results.Results: Detection results.
         """
         # Usiamo track invece di predict per avere gli ID degli oggetti (necessari per Kalman)
-        results = self.model.track(image, classes=self.target_classes, persist=True, verbose=False)
+        results = self.model.track(image, classes=self.target_classes, persist=True, verbose=False, conf=conf)
         return results[0]
 
     def get_detected_objects(self, results):
