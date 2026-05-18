@@ -18,7 +18,7 @@ sensors:
     enabled: true
     width: 800
     height: 600
-    fov: 90
+    fov: 60
   lidar:
     enabled: false
     channels: 32
