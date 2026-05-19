@@ -23,6 +23,7 @@ class SimulationState:
     """Helper to share data between camera callback and main loop."""
     def __init__(self):
         self.frame = None
+        self.depth_array = None
         self.results = None
         self.kalman_predictions = None
         self.kalman_filters = {}
@@ -135,6 +136,27 @@ def main():
         camera = world.spawn_actor(cam_bp, cam_transform, attach_to=vehicle)
         sensor_manager.add_sensor(camera)
         
+        # --- SENSOR DEPTH ---
+        depth_bp = blueprint_library.find('sensor.camera.depth')
+        depth_bp.set_attribute('image_size_x', str(config["sensors"]["camera"]["width"]))
+        depth_bp.set_attribute('image_size_y', str(config["sensors"]["camera"]["height"]))
+        depth_bp.set_attribute('fov', str(config["sensors"]["camera"]["fov"]))
+        depth_camera = world.spawn_actor(depth_bp, cam_transform, attach_to=vehicle)
+        sensor_manager.add_sensor(depth_camera)
+        
+        def depth_callback(image):
+            array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+            array = np.reshape(array, (image.height, image.width, 4))
+            # The depth map from CARLA is coded in RGB as: R + G*256 + B*256*256
+            B = array[:, :, 0].astype(np.float32)
+            G = array[:, :, 1].astype(np.float32)
+            R = array[:, :, 2].astype(np.float32)
+            normalized_depth = (R + G * 256.0 + B * 256.0 * 256.0) / (256.0 * 256.0 * 256.0 - 1.0)
+            depth_in_meters = 1000.0 * normalized_depth
+            state.depth_array = depth_in_meters
+
+        depth_camera.listen(lambda image: depth_callback(image))
+        
         def camera_callback(image):
             # Convert raw data to numpy array
             array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
@@ -149,6 +171,11 @@ def main():
             # Kalman Filter Processing
             predictions = {}
             if results and results.boxes and results.boxes.id is not None:
+                img_w = config["sensors"]["camera"]["width"]
+                img_h = config["sensors"]["camera"]["height"]
+                fov_rad = np.deg2rad(config["sensors"]["camera"]["fov"])
+                f_length = (img_w / 2.0) / np.tan(fov_rad / 2.0)
+
                 for i, box in enumerate(results.boxes):
                     obj_id = int(results.boxes.id[i])
                     coords = box.xyxy[0].tolist() # [x1, y1, x2, y2]
@@ -159,31 +186,59 @@ def main():
                     w = x2 - x1
                     h = y2 - y1
                     
+                    # 1. Recuperiamo la profondità Z (in metri)
+                    Z = 10.0 # fallback
+                    if state.depth_array is not None:
+                        cy_int = max(0, min(img_h - 1, int(cy)))
+                        cx_int = max(0, min(img_w - 1, int(cx)))
+                        Z = float(state.depth_array[cy_int, cx_int])
+                        if Z <= 0.0: Z = 10.0
+                        
+                    # 2. Calcoliamo X in metri (distanza laterale)
+                    X = (cx - img_w / 2.0) * Z / f_length
+                    
                     if obj_id not in state.kalman_filters:
                         state.kalman_filters[obj_id] = TrajectoryKalmanFilter(dt=1.0/config["simulation"].get("fps", 20))
                     
-                    # Passiamo cx come X e cy come Z
-                    est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(cx, cy)
+                    # 3. Aggiorniamo Kalman con X e Z IN METRI
+                    est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(X, Z)
                     
-                    # Calcoliamo la box futura (estrapoliamo di 20 frame per vederla molto più avanti in scenari veloci)
+                    # 4. Prevediamo la posizione 3D futura (in coordinate telecamera)
                     future_frames = 100
                     dt = state.kalman_filters[obj_id].dt
-                    pred_cx = est_x + vel_x * dt * future_frames
-                    pred_cy = est_z + vel_z * dt * future_frames
+                    pred_X = est_x + vel_x * dt * future_frames
+                    pred_Z = est_z + vel_z * dt * future_frames
+                    
+                    # Se l'oggetto finisce dietro la telecamera (Z < 0), lo limitiamo
+                    if pred_Z <= 0.5:
+                        continue
+                        
+                    # 5. Riproiettiamo in coordinate Pixel 2D per il disegno
+                    pred_cx = (pred_X * f_length) / pred_Z + img_w / 2.0
+                    
+                    # Scala della Y e dimensione box in base alla nuova profondità
+                    scale_factor = Z / pred_Z
+                    pred_cy = img_h / 2.0 + (cy - img_h / 2.0) * scale_factor
+                    pred_w = w * scale_factor
+                    pred_h = h * scale_factor
                     
                     pred_box = [
-                        pred_cx - w / 2.0,
-                        pred_cy - h / 2.0,
-                        pred_cx + w / 2.0,
-                        pred_cy + h / 2.0
+                        pred_cx - pred_w / 2.0,
+                        pred_cy - pred_h / 2.0,
+                        pred_cx + pred_w / 2.0,
+                        pred_cy + pred_h / 2.0
                     ]
                     
                     # Generiamo una serie di punti intermedi per disegnare la traiettoria
                     trajectory = []
-                    for f in range(2, future_frames + 1, 4):
-                        pt_cx = est_x + vel_x * dt * f
-                        pt_cy = est_z + vel_z * dt * f
-                        trajectory.append((pt_cx, pt_cy))
+                    for frm in range(2, future_frames + 1, 4):
+                        pt_X = est_x + vel_x * dt * frm
+                        pt_Z = est_z + vel_z * dt * frm
+                        
+                        if pt_Z > 0.5: # Disegna solo se davanti alla camera
+                            pt_cx = (pt_X * f_length) / pt_Z + img_w / 2.0
+                            pt_cy = img_h / 2.0 + (cy - img_h / 2.0) * (Z / pt_Z)
+                            trajectory.append((pt_cx, pt_cy))
                     
                     predictions[obj_id] = {
                         "box": pred_box,
