@@ -8,7 +8,6 @@ Autonomous driving simulation built on top of the [CARLA](https://carla.org/) si
 conda create -n carla-env python=3.7
 conda activate carla-env
 pip install -r requirements.txt
-pip install carla
 ```
 
 ## Project Structure
