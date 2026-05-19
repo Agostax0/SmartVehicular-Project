@@ -139,6 +139,15 @@ def spawn_camera(world, attach_to, transform, width=640, height=360, fov=95, tic
     return world.spawn_actor(bp, transform, attach_to=attach_to)
 
 
+def spawn_depth_camera(world, attach_to, transform, width=640, height=360, fov=95, tick=0.05)
+    bp = world.get_blueprint_library().find('sensor.camera.depth')
+    bp.set_attribute("image_size_x", str(width))
+    bp.set_attribute("image_size_y", str(height))
+    bp.set_attribute("fov", str(fov))
+    bp.set_attribute("sensor_tick", str(tick))
+    return world.spawn_actor(bp, transform, attach_to=attach_to)
+
+
 def spawn_lidar(
     world,
     attach_to,
