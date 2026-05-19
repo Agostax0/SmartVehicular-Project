@@ -27,6 +27,7 @@ class SimulationState:
         self.results = None
         self.kalman_predictions = None
         self.kalman_filters = {}
+        self.ego_speed = 0.0
 
 state = SimulationState()
 
@@ -200,8 +201,10 @@ def main():
                     if obj_id not in state.kalman_filters:
                         state.kalman_filters[obj_id] = TrajectoryKalmanFilter(dt=1.0/config["simulation"].get("fps", 20))
                     
-                    # 3. Aggiorniamo Kalman con X e Z IN METRI
-                    est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(X, Z)
+                    # 3. Aggiorniamo Kalman con X e Z IN METRI (e forniamo la velocità dell'auto)
+                    est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(
+                        X, Z, ego_vx=0.0, ego_vz=state.ego_speed
+                    )
                     
                     # 4. Prevediamo la posizione 3D futura (in coordinate telecamera)
                     future_frames = 100
@@ -264,6 +267,7 @@ def main():
             # Regolatore di velocità per mantenere circa 20 km/h (5.56 m/s)
             current_vel = vehicle.get_velocity()
             current_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
+            state.ego_speed = current_speed
             target_speed = 5.56 # 20 km/h in m/s
             
             error = target_speed - current_speed

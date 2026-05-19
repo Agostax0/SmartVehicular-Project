@@ -15,7 +15,8 @@ class TrajectoryKalmanFilter:
         # Inizializza il filtro di OpenCV:
         # dinamica a 4 stati [X, Z, Vx, Vz]
         # 2 misurazioni in input [X, Z]
-        self.kf = cv2.KalmanFilter(4, 2)
+        # 2 variabili di controllo [V_ego_x, V_ego_z]
+        self.kf = cv2.KalmanFilter(4, 2, 2)
         
         # 1. Matrice di Transizione di Stato (A o F)
         # Descrive la fisica del sistema (moto rettilineo uniforme):
@@ -59,22 +60,35 @@ class TrajectoryKalmanFilter:
         # Incertezza alta all'avvio perché non conosciamo la velocità iniziale.
         self.kf.errorCovPost = np.eye(4, dtype=np.float32) * 10.0
         
+        # 6. Matrice di Controllo (B)
+        # Sottrae lo spostamento causato dal movimento del veicolo (ego-motion)
+        # X_nuovo = X_vecchio + Vx*dt - V_ego_x*dt
+        # Z_nuovo = Z_vecchio + Vz*dt - V_ego_z*dt
+        self.kf.controlMatrix = np.array([
+            [-self.dt, 0.0],
+            [0.0, -self.dt],
+            [0.0, 0.0],
+            [0.0, 0.0]
+        ], np.float32)
+        
         self.initialized = False
 
-    def predict_update(self, measured_x, measured_z):
+    def predict_update(self, measured_x, measured_z, ego_vx=0.0, ego_vz=0.0):
         """
         Esegue i passi di Previsione e Correzione del Filtro di Kalman.
         
         Args:
             measured_x (float): Posizione laterale misurata al frame corrente (metri).
             measured_z (float): Profondità misurata al frame corrente (metri).
+            ego_vx (float): Velocità laterale del veicolo (m/s).
+            ego_vz (float): Velocità longitudinale del veicolo (m/s).
             
         Returns:
             tuple: (est_x, est_z, vel_x, vel_z)
-                   est_x: Posizione laterale filtrata.
-                   est_z: Profondità filtrata.
-                   vel_x: Velocità laterale stimata (m/s).
-                   vel_z: Velocità longitudinale di avvicinamento/allontanamento stimata (m/s).
+                   est_x: Posizione laterale filtrata (relativa).
+                   est_z: Profondità filtrata (relativa).
+                   vel_x: Velocità laterale stimata ASSOLUTA (m/s).
+                   vel_z: Velocità longitudinale stimata ASSOLUTA (m/s).
         """
         # OpenCV richiede rigorosamente input in formato matrice colonna float32
         m_x = np.float32(measured_x)
@@ -82,15 +96,17 @@ class TrajectoryKalmanFilter:
         
         if not self.initialized:
             # Al primo avvistamento, impostiamo la posizione misurata come stato iniziale
-            # e assumiamo una velocità di 0 m/s in entrambe le direzioni.
+            # e assumiamo una velocità assoluta di 0 m/s in entrambe le direzioni.
             self.kf.statePost = np.array([[m_x], [m_z], [0.0], [0.0]], np.float32)
             self.kf.statePre = np.array([[m_x], [m_z], [0.0], [0.0]], np.float32)
             self.initialized = True
             return float(m_x), float(m_z), 0.0, 0.0
             
         # FASE 1: PREDICT
-        # Il filtro ipotizza dove dovrebbe essere il pedone in base alla velocità calcolata finora
-        self.kf.predict()
+        # Il filtro ipotizza la nuova posizione applicando le velocità assolute e 
+        # sottraendo lo spostamento del veicolo (ego-motion)
+        control = np.array([[np.float32(ego_vx)], [np.float32(ego_vz)]], np.float32)
+        self.kf.predict(control)
         
         # FASE 2: CORRECT (UPDATE)
         # Correggiamo l'ipotesi usando le nuove misurazioni reali di YOLO e del Depth Sensor
