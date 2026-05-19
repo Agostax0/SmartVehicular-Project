@@ -31,16 +31,13 @@ class Visualizer:
             results: Results object from YOLOv8 detector.
             kalman_predictions (dict): Dictionary of predicted boxes.
         """
-        # 1. Convertiamo l'immagine in superficie Pygame
         surface = pygame.surfarray.make_surface(image.swapaxes(0, 1))
         
-        # 2. Colore per YOLO (Verde) e per Kalman (Arancione)
         color_yolo = (0, 255, 0)
         color_kalman = (255, 165, 0)
 
         if results is not None:
             for i, box in enumerate(results.boxes):
-                # Box originale YOLO
                 coords = box.xyxy[0].tolist()
                 rect = pygame.Rect(coords[0], coords[1], coords[2]-coords[0], coords[3]-coords[1])
                 pygame.draw.rect(surface, color_yolo, rect, 2)
@@ -49,7 +46,6 @@ class Visualizer:
                 text_surface = self.font.render(label, True, color_yolo)
                 surface.blit(text_surface, (coords[0], coords[1] - 22))
                 
-                # Box e traiettoria prevista da Kalman (se abbiamo l'ID)
                 if kalman_predictions and results.boxes.id is not None:
                     obj_id = int(results.boxes.id[i])
                     if obj_id in kalman_predictions:

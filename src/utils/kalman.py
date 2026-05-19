@@ -4,24 +4,21 @@ import numpy as np
 class TrajectoryKalmanFilter:
     def __init__(self, dt=0.05):
         """
-        Inizializza il Filtro di Kalman 2D per prevedere la traiettoria di un pedone.
+        Initialize Kalman's 2D filter to predict the trajectory of a pedestrian.
         
         Args:
-            dt (float): Delta time (secondi) tra un frame e l'altro. 
-                        Di default 0.05s presuppone circa 20 FPS.
+            dt (float): Delta time (in seconds) between frames. 
+                        Defaults at 0.05s when the simulation is running at 20 FPS.
         """
         self.dt = dt
         
-        # Inizializza il filtro di OpenCV:
-        # dinamica a 4 stati [X, Z, Vx, Vz]
-        # 2 misurazioni in input [X, Z]
-        # 2 variabili di controllo [V_ego_x, V_ego_z]
+        # Initialize Kalman's filter
+        # 4 states [X, Z, Vx, Vz]
+        # 2 measurements [X, Z]
+        # 2 control variables [V_ego_x, V_ego_z]
         self.kf = cv2.KalmanFilter(4, 2, 2)
         
-        # 1. Matrice di Transizione di Stato (A o F)
-        # Descrive la fisica del sistema (moto rettilineo uniforme):
-        # X_nuovo = X_vecchio + Vx * dt
-        # Z_nuovo = Z_vecchio + Vz * dt
+        # 1. Transition matrix
         self.kf.transitionMatrix = np.array([
             [1.0, 0.0, self.dt, 0.0],
             [0.0, 1.0, 0.0, self.dt],
@@ -29,18 +26,13 @@ class TrajectoryKalmanFilter:
             [0.0, 0.0, 0.0, 1.0]
         ], np.float32)
         
-        # 2. Matrice di Misurazione (H)
-        # Mappa come le misurazioni si relazionano agli stati.
-        # Noi misuriamo solo X e Z (i primi due stati), non le velocità.
+        # 2. Measurement matrix
         self.kf.measurementMatrix = np.array([
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0]
         ], np.float32)
         
-        # 3. Covarianza del Rumore di Processo (Q)
-        # Quanto ci aspettiamo che il pedone cambi improvvisamente velocità o direzione.
-        # Valori più alti rendono il filtro più "reattivo" ai cambi di direzione, 
-        # ma meno fluido. Le velocità (Vx, Vz) hanno solitamente un'incertezza maggiore.
+        # 3. Process noise matrix
         self.kf.processNoiseCov = np.array([
             [1e-2, 0.0, 0.0, 0.0],
             [0.0, 1e-2, 0.0, 0.0],
@@ -48,22 +40,16 @@ class TrajectoryKalmanFilter:
             [0.0, 0.0, 0.0, 5e-2]
         ], np.float32)
         
-        # 4. Covarianza del Rumore di Misurazione (R)
-        # Quanto ci fidiamo del sensore Depth di CARLA e della Bounding Box di YOLO.
-        # Se la Bounding Box balla molto, alza questi valori (es. 1e-1 o 5e-1).
+        # 4. Measurement noise matrix
         self.kf.measurementNoiseCov = np.array([
             [1e-1, 0.0],
             [0.0, 1e-1]
         ], np.float32)
         
-        # 5. Covarianza dell'Errore Iniziale (P)
-        # Incertezza alta all'avvio perché non conosciamo la velocità iniziale.
+        # 5. Initial error
         self.kf.errorCovPost = np.eye(4, dtype=np.float32) * 10.0
         
-        # 6. Matrice di Controllo (B)
-        # Sottrae lo spostamento causato dal movimento del veicolo (ego-motion)
-        # X_nuovo = X_vecchio + Vx*dt - V_ego_x*dt
-        # Z_nuovo = Z_vecchio + Vz*dt - V_ego_z*dt
+        # 6. Control matrix
         self.kf.controlMatrix = np.array([
             [-self.dt, 0.0],
             [0.0, -self.dt],
@@ -75,45 +61,44 @@ class TrajectoryKalmanFilter:
 
     def predict_update(self, measured_x, measured_z, ego_vx=0.0, ego_vz=0.0):
         """
-        Esegue i passi di Previsione e Correzione del Filtro di Kalman.
+        Predicts and Corrects the Kalman's filter trajectory.
         
         Args:
-            measured_x (float): Posizione laterale misurata al frame corrente (metri).
-            measured_z (float): Profondità misurata al frame corrente (metri).
-            ego_vx (float): Velocità laterale del veicolo (m/s).
-            ego_vz (float): Velocità longitudinale del veicolo (m/s).
+            measured_x (float): Pedestrian's horizontal offset at the current frame (meters).
+            measured_z (float): Pedestrian's depth distance at the current frame (meters).
+            ego_vx (float): Vehicle's horizontal velocity (m/s).
+            ego_vz (float): Vehicle's approaching velocity (m/s).
             
         Returns:
             tuple: (est_x, est_z, vel_x, vel_z)
-                   est_x: Posizione laterale filtrata (relativa).
-                   est_z: Profondità filtrata (relativa).
-                   vel_x: Velocità laterale stimata ASSOLUTA (m/s).
-                   vel_z: Velocità longitudinale stimata ASSOLUTA (m/s).
+                   est_x: Predicted pedestrian's horizontal coordinate (relative).
+                   est_z: Predicted pedestrian's depth coordinate (relative).
+                   vel_x: Predicted vehicle's horizontal velocity (m/s) (absolute).
+                   vel_z: Predicted vehicle's approaching velocity (m/s) (absolute).
         """
-        # OpenCV richiede rigorosamente input in formato matrice colonna float32
         m_x = np.float32(measured_x)
         m_z = np.float32(measured_z)
         
         if not self.initialized:
-            # Al primo avvistamento, impostiamo la posizione misurata come stato iniziale
-            # e assumiamo una velocità assoluta di 0 m/s in entrambe le direzioni.
+            # At the first read, we set the measured position as the initial one
+            # we assume no movement in this scenario.
             self.kf.statePost = np.array([[m_x], [m_z], [0.0], [0.0]], np.float32)
             self.kf.statePre = np.array([[m_x], [m_z], [0.0], [0.0]], np.float32)
             self.initialized = True
             return float(m_x), float(m_z), 0.0, 0.0
             
-        # FASE 1: PREDICT
-        # Il filtro ipotizza la nuova posizione applicando le velocità assolute e 
-        # sottraendo lo spostamento del veicolo (ego-motion)
+        # 1: PREDICT
+        # The filter applies the new coordinates by applying the velocities and 
+        # subtracting the vehicle movement (ego-motion)
         control = np.array([[np.float32(ego_vx)], [np.float32(ego_vz)]], np.float32)
         self.kf.predict(control)
         
-        # FASE 2: CORRECT (UPDATE)
-        # Correggiamo l'ipotesi usando le nuove misurazioni reali di YOLO e del Depth Sensor
+        # 2: CORRECT (UPDATE)
+        # We adjust the prediction using the real measurements from YOLO and the Depth Sensor
         measurement = np.array([[m_x], [m_z]], np.float32)
         estimated_state = self.kf.correct(measurement)
         
-        # Estraiamo i 4 valori dallo stato aggiornato
+        # These are our estimated values
         est_x = float(estimated_state[0, 0])
         est_z = float(estimated_state[1, 0])
         vel_x = float(estimated_state[2, 0])
