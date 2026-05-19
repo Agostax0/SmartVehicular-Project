@@ -42,15 +42,13 @@ def main():
 
     config = load_config(args.config)
     logger.info("Loaded config: %s", args.config)
-    
-    # 1. Connect to CARLA
+
     client = carla.Client(config["carla"]["host"], config["carla"]["port"])
     client.set_timeout(config["carla"]["timeout"])
     
     try:
         world = client.get_world()
         
-        # Enable Synchronous Mode
         settings = world.get_settings()
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = 1.0 / config["simulation"].get("fps", 20)
@@ -58,7 +56,6 @@ def main():
         
         logger.info("Connected to CARLA and enabled sync mode: %s", world.get_map().name)
         
-        # 2. Setup Components
         detector = ObjectDetector()
         visualizer = Visualizer(
             width=config["sensors"]["camera"]["width"],
@@ -66,7 +63,6 @@ def main():
             title="SmartVehicular Detection - Moving Vehicle & Crossing Walker"
         )
         
-        # 3. Spawn Vehicle
         blueprint_library = world.get_blueprint_library()
         v_bp = blueprint_library.find(config["vehicle"]["blueprint"])
         spawn_points = world.get_map().get_spawn_points()
@@ -82,50 +78,42 @@ def main():
             return
         logger.info("Vehicle spawned: %s at %s", vehicle.type_id, spawn_point.location)
         
-        # --- PARAMETRI DI SPAWN PEDONE (LONTANO SUL MARCIAPIEDE CHE ATTRAVERSA) ---
-        distanza_dal_veicolo = 35.0  # Spawna lontano
-        altezza_iniziale = 1.0
-        spawn_laterale = 5.0  # Lato marciapiede/banchina
-        # --------------------------------------------------------------------------
+        distance_from_vehicle = 35.0
+        walker_height = 1.0
+        walker_horizontal_offset = 5.0
 
         p_bp = blueprint_library.filter("walker.pedestrian.*")[0]
         if p_bp.has_attribute('is_invincible'):
             p_bp.set_attribute('is_invincible', 'true')
         
-        # Usiamo il punto di spawn del veicolo per posizionare il pedone davanti
         v_location = spawn_point.location
         v_rotation = spawn_point.rotation
         forward_vector = v_rotation.get_forward_vector()
         right_vector = v_rotation.get_right_vector()
         
-        # Calcolo posizione sul marciapiede davanti all'auto
-        p_location = v_location + forward_vector * distanza_dal_veicolo + right_vector * spawn_laterale
+        p_location = v_location + forward_vector * distance_from_vehicle + right_vector * walker_horizontal_offset
         
         walker = None
         for offset in [0.0, 0.5, 1.0, 1.5]:
-            p_location.z = v_location.z + altezza_iniziale + offset
+            p_location.z = v_location.z + walker_height + offset
             p_transform = carla.Transform(p_location, v_rotation)
             walker = world.try_spawn_actor(p_bp, p_transform)
             if walker is not None:
                 break
                 
         if walker is None:
-            logger.warning("Impossibile spawnare il pedone sul marciapiede.")
+            logger.warning("Can't spawn walker near the sidewalk.")
         else:
-            logger.info("Pedone spawnato sul marciapiede a %s metri di distanza", distanza_dal_veicolo)
+            logger.info("Walker spawned on the sidewalk at a distance of %s meters", distance_from_vehicle)
             
-            # Direzione per attraversare la strada (perpendicolare alla direzione dell'auto)
-            # Se siamo a destra (laterale positivo), andiamo verso sinistra (negativo)
-            if spawn_laterale > 0:
+            if walker_horizontal_offset > 0:
                 cross_direction = carla.Vector3D(-right_vector.x, -right_vector.y, -right_vector.z)
             else:
                 cross_direction = right_vector
             cross_direction = cross_direction.make_unit_vector()
             
-            # Applica controllo al pedone per farlo camminare a 1.4 m/s attraverso la strada
             walker.apply_control(carla.WalkerControl(direction=cross_direction, speed=1.4))
         
-        # 4. Setup Sensors
         sensor_manager = SensorManager(world, vehicle)
         
         cam_bp = blueprint_library.find('sensor.camera.rgb')
@@ -137,7 +125,6 @@ def main():
         camera = world.spawn_actor(cam_bp, cam_transform, attach_to=vehicle)
         sensor_manager.add_sensor(camera)
         
-        # --- SENSOR DEPTH ---
         depth_bp = blueprint_library.find('sensor.camera.depth')
         depth_bp.set_attribute('image_size_x', str(config["sensors"]["camera"]["width"]))
         depth_bp.set_attribute('image_size_y', str(config["sensors"]["camera"]["height"]))
@@ -187,7 +174,6 @@ def main():
                     w = x2 - x1
                     h = y2 - y1
                     
-                    # 1. Recuperiamo la profondità Z (in metri)
                     Z = 10.0 # fallback
                     if state.depth_array is not None:
                         cy_int = max(0, min(img_h - 1, int(cy)))
@@ -195,31 +181,25 @@ def main():
                         Z = float(state.depth_array[cy_int, cx_int])
                         if Z <= 0.0: Z = 10.0
                         
-                    # 2. Calcoliamo X in metri (distanza laterale)
                     X = (cx - img_w / 2.0) * Z / f_length
                     
                     if obj_id not in state.kalman_filters:
                         state.kalman_filters[obj_id] = TrajectoryKalmanFilter(dt=1.0/config["simulation"].get("fps", 20))
                     
-                    # 3. Aggiorniamo Kalman con X e Z IN METRI (e forniamo la velocità dell'auto)
                     est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(
                         X, Z, ego_vx=0.0, ego_vz=state.ego_speed
                     )
                     
-                    # 4. Prevediamo la posizione 3D futura (in coordinate telecamera)
                     future_frames = 100
                     dt = state.kalman_filters[obj_id].dt
                     pred_X = est_x + vel_x * dt * future_frames
                     pred_Z = est_z + vel_z * dt * future_frames
                     
-                    # Se l'oggetto finisce dietro la telecamera (Z < 0), lo limitiamo
                     if pred_Z <= 0.5:
                         continue
                         
-                    # 5. Riproiettiamo in coordinate Pixel 2D per il disegno
                     pred_cx = (pred_X * f_length) / pred_Z + img_w / 2.0
                     
-                    # Scala della Y e dimensione box in base alla nuova profondità
                     scale_factor = Z / pred_Z
                     pred_cy = img_h / 2.0 + (cy - img_h / 2.0) * scale_factor
                     pred_w = w * scale_factor
@@ -232,13 +212,12 @@ def main():
                         pred_cy + pred_h / 2.0
                     ]
                     
-                    # Generiamo una serie di punti intermedi per disegnare la traiettoria
                     trajectory = []
                     for frm in range(2, future_frames + 1, 4):
                         pt_X = est_x + vel_x * dt * frm
                         pt_Z = est_z + vel_z * dt * frm
                         
-                        if pt_Z > 0.5: # Disegna solo se davanti alla camera
+                        if pt_Z > 0.5: 
                             pt_cx = (pt_X * f_length) / pt_Z + img_w / 2.0
                             pt_cy = img_h / 2.0 + (cy - img_h / 2.0) * (Z / pt_Z)
                             trajectory.append((pt_cx, pt_cy))
@@ -249,14 +228,12 @@ def main():
                         "time_horizon": future_frames * dt
                     }
             
-            # Update shared state
             state.frame = rgb_array
             state.results = results
             state.kalman_predictions = predictions
 
         camera.listen(lambda image: camera_callback(image))
         
-        # 5. Simulation Loop
         logger.info("Starting simulation loop. Press Ctrl+C or close window to stop.")
         
         spectator = world.get_spectator()
@@ -264,21 +241,17 @@ def main():
         while True:
             world.tick()
             
-            # Regolatore di velocità per mantenere circa 20 km/h (5.56 m/s)
             current_vel = vehicle.get_velocity()
             current_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
             state.ego_speed = current_speed
             target_speed = 5.56 # 20 km/h in m/s
             
             error = target_speed - current_speed
-            # Controllo P semplice per acceleratore
             throttle = max(0.0, min(1.0, 0.4 * error + 0.1))
             vehicle.apply_control(carla.VehicleControl(throttle=throttle, steer=0.0))
             
-            # Sposta la telecamera dello spettatore dietro il veicolo in corsa
             move_spectator_to(vehicle.get_transform(), spectator, distance=9.0, z=3.5, pitch=-16.0)
             
-            # Aggiorna il visualizzatore Pygame
             if state.frame is not None:
                 if not visualizer.update(state.frame, state.results, state.kalman_predictions):
                     break
@@ -288,7 +261,6 @@ def main():
     finally:
         logger.info("Cleaning up actors...")
         
-        # Disable Sync Mode
         if 'world' in locals():
             settings = world.get_settings()
             settings.synchronous_mode = False
