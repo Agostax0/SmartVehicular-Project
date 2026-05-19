@@ -9,19 +9,43 @@ from utils.kalman import TrajectoryKalmanFilter
 from utils.detector import ObjectDetector
 from utils.visualizer import Visualizer
 from sensors.sensor_manager import SensorManager
-from utils.carla_utils import move_spectator_to
+from utils.carla_utils import (
+    image_to_bgr,
+    move_spectator_to,
+    safe_destroy,
+    spawn_camera,
+    spawn_depth_camera,
+    spawn_vehicle,
+)
 
 logger = get_logger(__name__)
 
 
 def load_config(path: str) -> dict:
+    """Load a YAML configuration file.
+
+    Args:
+        path: Path to the YAML configuration file.
+
+    Returns:
+        Parsed configuration as a dictionary.
+    """
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
 
 class SimulationState:
     """Helper to share data between camera callback and main loop."""
+
     def __init__(self):
+        """Initialize the shared simulation state.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         self.frame = None
         self.depth_array = None
         self.results = None
@@ -32,6 +56,14 @@ class SimulationState:
 state = SimulationState()
 
 def main():
+    """Run the moving-vehicle simulation with a crossing pedestrian.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    """
     parser = argparse.ArgumentParser(description="SmartVehicular simulation runner with moving vehicle and crossing pedestrian")
     parser.add_argument(
         "--config",
@@ -45,6 +77,9 @@ def main():
 
     client = carla.Client(config["carla"]["host"], config["carla"]["port"])
     client.set_timeout(config["carla"]["timeout"])
+
+    vehicle = None
+    walker = None
     
     try:
         world = client.get_world()
@@ -64,19 +99,19 @@ def main():
         )
         
         blueprint_library = world.get_blueprint_library()
-        v_bp = blueprint_library.find(config["vehicle"]["blueprint"])
-        spawn_points = world.get_map().get_spawn_points()
-        vehicle = None
-        for sp in spawn_points:
-            vehicle = world.try_spawn_actor(v_bp, sp)
-            if vehicle is not None:
-                spawn_point = sp
-                break
-        
-        if vehicle is None:
-            logger.error("Failed to spawn vehicle at any available spawn point")
+        try:
+            vehicle = spawn_vehicle(
+                world,
+                spawn_index=0,
+                vehicle_filter=config["vehicle"]["blueprint"],
+                autopilot=False,
+            )
+        except RuntimeError as exc:
+            logger.error("Failed to spawn vehicle at any available spawn point: %s", exc)
             return
-        logger.info("Vehicle spawned: %s at %s", vehicle.type_id, spawn_point.location)
+
+        spawn_transform = vehicle.get_transform()
+        logger.info("Vehicle spawned: %s at %s", vehicle.type_id, spawn_transform.location)
         
         distance_from_vehicle = 35.0
         walker_height = 1.0
@@ -86,8 +121,8 @@ def main():
         if p_bp.has_attribute('is_invincible'):
             p_bp.set_attribute('is_invincible', 'true')
         
-        v_location = spawn_point.location
-        v_rotation = spawn_point.rotation
+        v_location = spawn_transform.location
+        v_rotation = spawn_transform.rotation
         forward_vector = v_rotation.get_forward_vector()
         right_vector = v_rotation.get_right_vector()
         
@@ -116,23 +151,38 @@ def main():
         
         sensor_manager = SensorManager(world, vehicle)
         
-        cam_bp = blueprint_library.find('sensor.camera.rgb')
-        cam_bp.set_attribute('image_size_x', str(config["sensors"]["camera"]["width"]))
-        cam_bp.set_attribute('image_size_y', str(config["sensors"]["camera"]["height"]))
-        cam_bp.set_attribute('fov', str(config["sensors"]["camera"]["fov"]))
-        
         cam_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
-        camera = world.spawn_actor(cam_bp, cam_transform, attach_to=vehicle)
+        camera = spawn_camera(
+            world,
+            vehicle,
+            cam_transform,
+            width=config["sensors"]["camera"]["width"],
+            height=config["sensors"]["camera"]["height"],
+            fov=config["sensors"]["camera"]["fov"],
+            tick=0.0,
+        )
         sensor_manager.add_sensor(camera)
         
-        depth_bp = blueprint_library.find('sensor.camera.depth')
-        depth_bp.set_attribute('image_size_x', str(config["sensors"]["camera"]["width"]))
-        depth_bp.set_attribute('image_size_y', str(config["sensors"]["camera"]["height"]))
-        depth_bp.set_attribute('fov', str(config["sensors"]["camera"]["fov"]))
-        depth_camera = world.spawn_actor(depth_bp, cam_transform, attach_to=vehicle)
+        depth_camera = spawn_depth_camera(
+            world,
+            vehicle,
+            cam_transform,
+            width=config["sensors"]["camera"]["width"],
+            height=config["sensors"]["camera"]["height"],
+            fov=config["sensors"]["camera"]["fov"],
+            tick=0.0,
+        )
         sensor_manager.add_sensor(depth_camera)
         
         def depth_callback(image):
+            """Convert depth frames into a metric depth array.
+
+            Args:
+                image: CARLA depth camera image.
+
+            Returns:
+                None.
+            """
             array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
             array = np.reshape(array, (image.height, image.width, 4))
             # The depth map from CARLA is coded in RGB as: R + G*256 + B*256*256
@@ -146,12 +196,16 @@ def main():
         depth_camera.listen(lambda image: depth_callback(image))
         
         def camera_callback(image):
-            # Convert raw data to numpy array
-            array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
-            array = np.reshape(array, (image.height, image.width, 4))
-            # CARLA camera raw data is in BGRA format. Slicing array[:, :, :3] gives BGR.
-            # We convert BGR to RGB by reversing the channels along the third axis.
-            rgb_array = array[:, :, :3][:, :, ::-1]
+            """Process camera frames and update detection state.
+
+            Args:
+                image: CARLA camera image.
+
+            Returns:
+                None.
+            """
+            bgr_array = image_to_bgr(image)
+            rgb_array = bgr_array[:, :, ::-1]
             
             # Run detection
             results = detector.detect(rgb_array)
@@ -271,10 +325,7 @@ def main():
             visualizer.close()
         if 'sensor_manager' in locals():
             sensor_manager.destroy()
-        if 'walker' in locals():
-            walker.destroy()
-        if 'vehicle' in locals():
-            vehicle.destroy()
+        safe_destroy([walker, vehicle])
 
 
 if __name__ == "__main__":

@@ -324,6 +324,7 @@ __all__ = [
     "spawn_vehicle",
     "spawn_vehicle_ahead",
     "spawn_camera",
+    "spawn_depth_camera",
     "spawn_lidar",
     "spawn_radar",
     "image_to_bgr",
