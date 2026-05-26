@@ -56,12 +56,15 @@ def spawn_vehicle(
         bps = world.get_blueprint_library().filter("vehicle.*")
 
     for k in range(len(points)):
+
+        spawn_point = points[spawn_index + k % len(points)]
         actor = world.try_spawn_actor(
-            random.choice(bps), points[(spawn_index + k) % len(points)]
+            random.choice(bps), spawn_point
         )
         if actor is not None:
             actor.set_autopilot(autopilot)
-            return actor
+            actor.set_transform(spawn_point)
+            return actor, spawn_point
 
     raise RuntimeError("Could not spawn vehicle")
 

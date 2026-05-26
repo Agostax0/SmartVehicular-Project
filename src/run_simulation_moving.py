@@ -83,6 +83,7 @@ def main():
     
     try:
         world = client.get_world()
+        spectator = world.get_spectator()
         
         settings = world.get_settings()
         settings.synchronous_mode = True
@@ -100,7 +101,7 @@ def main():
         
         blueprint_library = world.get_blueprint_library()
         try:
-            vehicle = spawn_vehicle(
+            vehicle, spawn_transform = spawn_vehicle(
                 world,
                 spawn_index=0,
                 vehicle_filter=config["vehicle"]["blueprint"],
@@ -110,7 +111,6 @@ def main():
             logger.error("Failed to spawn vehicle at any available spawn point: %s", exc)
             return
 
-        spawn_transform = vehicle.get_transform()
         logger.info("Vehicle spawned: %s at %s", vehicle.type_id, spawn_transform.location)
         
         distance_from_vehicle = 35.0
@@ -290,7 +290,6 @@ def main():
         
         logger.info("Starting simulation loop. Press Ctrl+C or close window to stop.")
         
-        spectator = world.get_spectator()
         
         while True:
             world.tick()
@@ -304,7 +303,7 @@ def main():
             throttle = max(0.0, min(1.0, 0.4 * error + 0.1))
             vehicle.apply_control(carla.VehicleControl(throttle=throttle, steer=0.0))
             
-            move_spectator_to(vehicle.get_transform(), spectator, distance=9.0, z=3.5, pitch=-16.0)
+            #move_spectator_to(vehicle.get_transform(), spectator, distance=9.0, z=3.5, pitch=-16.0)
             
             if state.frame is not None:
                 if not visualizer.update(state.frame, state.results, state.kalman_predictions):
