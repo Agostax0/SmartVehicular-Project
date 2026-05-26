@@ -1,14 +1,14 @@
-import argparse
 import yaml
 import carla
 import numpy as np
-import time
+import typer
 
 from utils.logger import get_logger
 from utils.kalman import TrajectoryKalmanFilter
 from utils.detector import ObjectDetector
 from utils.visualizer import Visualizer
 from sensors.sensor_manager import SensorManager
+from scenarios import get_scenario, list_scenario_names
 from utils.carla_utils import (
     image_to_bgr,
     move_spectator_to,
@@ -55,25 +55,20 @@ class SimulationState:
 
 state = SimulationState()
 
-def main():
-    """Run the moving-vehicle simulation with a crossing pedestrian.
+def run_simulation(config_path: str, scenario_name: str) -> None:
+    """Run the moving-vehicle simulation with a selected scenario.
 
     Args:
-        None.
+        config_path: Path to the YAML configuration file.
+        scenario_name: Registered scenario identifier.
 
     Returns:
         None.
     """
-    parser = argparse.ArgumentParser(description="SmartVehicular simulation runner with moving vehicle and crossing pedestrian")
-    parser.add_argument(
-        "--config",
-        default="config/config.yaml",
-        help="Path to the YAML configuration file",
-    )
-    args = parser.parse_args()
-
-    config = load_config(args.config)
-    logger.info("Loaded config: %s", args.config)
+    scenario = get_scenario(scenario_name)
+    config = load_config(config_path)
+    logger.info("Loaded config: %s", config_path)
+    logger.info("Running scenario: %s", scenario.name)
 
     client = carla.Client(config["carla"]["host"], config["carla"]["port"])
     client.set_timeout(config["carla"]["timeout"])
@@ -96,7 +91,7 @@ def main():
         visualizer = Visualizer(
             width=config["sensors"]["camera"]["width"],
             height=config["sensors"]["camera"]["height"],
-            title="SmartVehicular Detection - Moving Vehicle & Crossing Walker"
+            title=f"SmartVehicular Detection - {scenario.name}"
         )
         
         blueprint_library = world.get_blueprint_library()
@@ -113,9 +108,9 @@ def main():
 
         logger.info("Vehicle spawned: %s at %s", vehicle.type_id, spawn_transform.location)
         
-        distance_from_vehicle = 35.0
-        walker_height = 1.0
-        walker_horizontal_offset = 5.0
+        distance_from_vehicle = scenario.walker_distance_from_vehicle
+        walker_height = scenario.walker_height
+        walker_horizontal_offset = scenario.walker_horizontal_offset
 
         p_bp = blueprint_library.filter("walker.pedestrian.*")[0]
         if p_bp.has_attribute('is_invincible'):
@@ -147,7 +142,9 @@ def main():
                 cross_direction = right_vector
             cross_direction = cross_direction.make_unit_vector()
             
-            walker.apply_control(carla.WalkerControl(direction=cross_direction, speed=1.4))
+            walker.apply_control(
+                carla.WalkerControl(direction=cross_direction, speed=scenario.walker_speed)
+            )
         
         sensor_manager = SensorManager(world, vehicle)
         
@@ -244,7 +241,7 @@ def main():
                         X, Z, ego_vx=0.0, ego_vz=state.ego_speed
                     )
                     
-                    future_frames = 100
+                    future_frames = scenario.prediction_future_frames
                     dt = state.kalman_filters[obj_id].dt
                     pred_X = est_x + vel_x * dt * future_frames
                     pred_Z = est_z + vel_z * dt * future_frames
@@ -297,7 +294,7 @@ def main():
             current_vel = vehicle.get_velocity()
             current_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
             state.ego_speed = current_speed
-            target_speed = 5.56 # 20 km/h in m/s
+            target_speed = scenario.target_speed_mps
             
             error = target_speed - current_speed
             throttle = max(0.0, min(1.0, 0.4 * error + 0.1))
@@ -327,5 +324,35 @@ def main():
         safe_destroy([walker, vehicle])
 
 
+def main(
+    config: str = typer.Option(
+        "config/config.yaml",
+        "--config",
+        help="Path to the YAML configuration file.",
+    ),
+    scenario: str = typer.Option(
+        "non-colliding-pedestrian",
+        "--scenario",
+        help="Scenario name to run.",
+    ),
+    list_scenarios: bool = typer.Option(
+        False,
+        "--list-scenarios",
+        help="List all available scenarios and exit.",
+    ),
+) -> None:
+    """CLI entrypoint for running simulation scenarios."""
+    if list_scenarios:
+        for name in list_scenario_names():
+            scenario_config = get_scenario(name)
+            typer.echo(f"{name}: {scenario_config.description}")
+        raise typer.Exit()
+
+    try:
+        run_simulation(config_path=config, scenario_name=scenario)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--scenario") from exc
+
+
 if __name__ == "__main__":
-    main()
+    typer.run(main)
