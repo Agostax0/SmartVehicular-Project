@@ -27,8 +27,8 @@ scenarios:
     description: "Pedestrian crosses the direct path of the ego vehicle."
     walker_distance_from_vehicle: 35.0
     walker_height: 1.0
-    walker_horizontal_offset: 5.0
-    walker_speed: 0.6
+    walker_horizontal_offset: -2.5
+    walker_speed: 0.4
     target_speed_mps: 5.56
     prediction_future_frames: 30
 

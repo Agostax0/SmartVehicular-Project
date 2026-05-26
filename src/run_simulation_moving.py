@@ -114,7 +114,7 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
         walker_height = scenario.walker_height
         walker_horizontal_offset = scenario.walker_horizontal_offset
 
-        p_bp = blueprint_library.filter("walker.pedestrian.*")[0]
+        p_bp = blueprint_library.filter("walker.pedestrian.*")[2]
         if p_bp.has_attribute('is_invincible'):
             p_bp.set_attribute('is_invincible', 'true')
         
@@ -124,7 +124,10 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
         right_vector = v_rotation.get_right_vector()
         
         p_location = v_location + forward_vector * distance_from_vehicle + right_vector * walker_horizontal_offset
-        
+        p_rotation = v_rotation
+        if(walker_horizontal_offset < 0):
+            p_rotation.yaw += 180
+
         walker = None
         for offset in [0.0, 0.5, 1.0, 1.5]:
             p_location.z = v_location.z + walker_height + offset
