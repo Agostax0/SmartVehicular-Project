@@ -5,6 +5,7 @@ matplotlib
 open3d
 Pillow
 pyyaml
+typer
 pytest
 ultralytics==8.0.145
 carla==0.9.15

@@ -19,6 +19,8 @@ SmartVehicular-Project/
 ├── data/
 │   └── output/              # Simulation artefacts (images, logs)
 ├── src/
+│   ├── scenarios/           # Reusable simulation scenario definitions
+│   │   └── moving.py
 │   ├── agents/              # Autonomous driving agents
 │   │   └── base_agent.py
 │   ├── controllers/         # Vehicle control logic
@@ -27,7 +29,7 @@ SmartVehicular-Project/
 │   │   └── sensor_manager.py
 │   ├── utils/               # Shared utilities (logging, …)
 │   |   └── logger.py
-|   └── run_simulation.py    # Main entry-point to launch a simulation
+│   └── run_simulation_moving.py  # Main CLI entry-point to launch moving scenarios
 ├── tests/                   # Unit tests (pytest)
 │   └── test_utils.py
 ├── .gitignore
@@ -38,7 +40,13 @@ SmartVehicular-Project/
 ## Running a simulation
 
 ```bash
-python src/run_simulation.py --config config/config.yaml
+python src/run_simulation_moving.py --config config/config.yaml --scenario non-colliding-pedestrian
+```
+
+List available scenarios:
+
+```bash
+python src/run_simulation_moving.py --list-scenarios
 ```
 
 ## Running tests
@@ -46,4 +54,3 @@ python src/run_simulation.py --config config/config.yaml
 ```bash
 pytest tests/
 ```
-
