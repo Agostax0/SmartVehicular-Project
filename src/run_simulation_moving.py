@@ -18,6 +18,7 @@ from utils.carla_utils import (
     spawn_depth_camera,
     spawn_vehicle,
 )
+from utils.collision_module import check_collision_risk
 
 logger = get_logger(__name__)
 
@@ -242,6 +243,11 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
                         X, Z, ego_vx=0.0, ego_vz=state.ego_speed
                     )
                     
+                    real_v = vel_z - state.ego_speed
+                    risk, msg, ttc = check_collision_risk(est_x, est_z, vel_x, real_v)
+                    print(f"{risk}, {msg}, {ttc}")
+
+
                     future_frames = scenario.prediction_future_frames
                     dt = state.kalman_filters[obj_id].dt
                     pred_X = est_x + vel_x * dt * future_frames
