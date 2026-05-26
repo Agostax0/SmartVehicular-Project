@@ -19,7 +19,7 @@ SmartVehicular-Project/
 ├── data/
 │   └── output/              # Simulation artefacts (images, logs)
 ├── src/
-│   ├── scenarios/           # Reusable simulation scenario definitions
+│   ├── scenarios/           # Scenario loading and validation utilities
 │   │   └── moving.py
 │   ├── agents/              # Autonomous driving agents
 │   │   └── base_agent.py
@@ -43,11 +43,15 @@ SmartVehicular-Project/
 python src/run_simulation_moving.py --config config/config.yaml --scenario non-colliding-pedestrian
 ```
 
+If `--scenario` is omitted, the CLI uses `simulation.default_scenario` from `config/config.yaml`.
+
 List available scenarios:
 
 ```bash
 python src/run_simulation_moving.py --list-scenarios
 ```
+
+Scenario definitions are configured under the `scenarios` section in `config/config.yaml`.
 
 ## Running tests
 

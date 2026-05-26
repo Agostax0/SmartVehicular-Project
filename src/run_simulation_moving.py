@@ -2,6 +2,7 @@ import yaml
 import carla
 import numpy as np
 import typer
+from typing import Optional
 
 from utils.logger import get_logger
 from utils.kalman import TrajectoryKalmanFilter
@@ -55,18 +56,18 @@ class SimulationState:
 
 state = SimulationState()
 
-def run_simulation(config_path: str, scenario_name: str) -> None:
+def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
     """Run the moving-vehicle simulation with a selected scenario.
 
     Args:
         config_path: Path to the YAML configuration file.
-        scenario_name: Registered scenario identifier.
+        scenario_name: Registered scenario identifier (optional if default is in config).
 
     Returns:
         None.
     """
-    scenario = get_scenario(scenario_name)
     config = load_config(config_path)
+    scenario = get_scenario(config, scenario_name)
     logger.info("Loaded config: %s", config_path)
     logger.info("Running scenario: %s", scenario.name)
 
@@ -330,10 +331,10 @@ def main(
         "--config",
         help="Path to the YAML configuration file.",
     ),
-    scenario: str = typer.Option(
-        "non-colliding-pedestrian",
+    scenario: Optional[str] = typer.Option(
+        None,
         "--scenario",
-        help="Scenario name to run.",
+        help="Scenario name to run. Defaults to simulation.default_scenario in config.",
     ),
     list_scenarios: bool = typer.Option(
         False,
@@ -343,8 +344,9 @@ def main(
 ) -> None:
     """CLI entrypoint for running simulation scenarios."""
     if list_scenarios:
-        for name in list_scenario_names():
-            scenario_config = get_scenario(name)
+        config_data = load_config(config)
+        for name in list_scenario_names(config_data):
+            scenario_config = get_scenario(config_data, name)
             typer.echo(f"{name}: {scenario_config.description}")
         raise typer.Exit()
 
