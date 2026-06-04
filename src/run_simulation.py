@@ -3,7 +3,6 @@ import carla
 import numpy as np
 import typer
 from typing import Optional
-import torch
 import queue
 
 from utils.logger import get_logger
@@ -14,7 +13,6 @@ from sensors.sensor_manager import SensorManager
 from scenarios import get_scenario, list_scenario_names
 from utils.carla_utils import (
     image_to_bgr,
-    move_spectator_to,
     safe_destroy,
     spawn_camera,
     spawn_depth_camera,
@@ -83,7 +81,6 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
     
     try:
         world = client.get_world()
-        spectator = world.get_spectator()
         
         settings = world.get_settings()
         settings.synchronous_mode = True
