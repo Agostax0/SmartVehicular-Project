@@ -56,6 +56,7 @@ class SimulationState:
         self.kalman_predictions = None
         self.kalman_filters = {}
         self.ego_speed = 0.0
+        self.brake_needed = False
 
 state = SimulationState()
 
@@ -214,7 +215,10 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
             
             error = target_speed - current_speed
             throttle = max(0.0, min(1.0, 0.4 * error + 0.1))
-            vehicle.apply_control(carla.VehicleControl(throttle=throttle, steer=0.0))
+            if state.brake_needed:
+                vehicle.apply_control(carla.VehicleControl(throttle=0.0, steer=0.0, brake=1.0))
+            else:
+                vehicle.apply_control(carla.VehicleControl(throttle=throttle, steer=0.0))
             
             # --- PROCESS RGB & DETECT ---
             bgr_array = image_to_bgr(image)
@@ -224,6 +228,7 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
             
             # --- KALMAN FILTER ---
             predictions = {}
+            state.brake_needed = False
             if results and results.boxes and results.boxes.id is not None:
                 img_w = config["sensors"]["camera"]["width"]
                 img_h = config["sensors"]["camera"]["height"]
@@ -259,6 +264,8 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
                     real_v = vel_z - state.ego_speed
                     risk, msg, ttc = check_collision_risk(est_x, est_z, vel_x, real_v)
                     print(f"{risk}, {msg}, {ttc}")
+                    if risk:
+                        state.brake_needed = True
 
                     future_frames = scenario.prediction_future_frames
                     dt = state.kalman_filters[obj_id].dt
