@@ -16,21 +16,23 @@ pip install -r requirements.txt
 SmartVehicular-Project/
 ├── config/                  # YAML configuration files
 │   └── config.yaml
-├── data/
-│   └── output/              # Simulation artefacts (images, logs)
 ├── src/
 │   ├── scenarios/           # Scenario loading and validation utilities
 │   │   └── moving.py
-│   ├── agents/              # Autonomous driving agents
-│   │   └── base_agent.py
 │   ├── controllers/         # Vehicle control logic
 │   │   └── vehicle_controller.py
 │   ├── sensors/             # Sensor management (camera, lidar, …)
 │   │   └── sensor_manager.py
 │   ├── utils/               # Shared utilities (logging, …)
-│   |   └── logger.py
-│   └── run_simulation_moving.py  # Main CLI entry-point to launch moving scenarios
+│   │   ├── carla_utils.py
+│   │   ├── collision_module.py
+│   │   ├── detector.py
+|   │   ├── kalman.py
+│   |   ├── logger.py
+|   │   └── visualizer.py
+│   └── run_simulation.py  # Main CLI entry-point to launch moving scenarios
 ├── tests/                   # Unit tests (pytest)
+|   ├── test_collision.py
 │   └── test_utils.py
 ├── .gitignore
 ├── README.md
@@ -40,7 +42,7 @@ SmartVehicular-Project/
 ## Running a simulation
 
 ```bash
-python src/run_simulation_moving.py --config config/config.yaml --scenario non-colliding-pedestrian
+python src/run_simulation.py --config config/config.yaml --scenario non-colliding-pedestrian
 ```
 
 If `--scenario` is omitted, the CLI uses `simulation.default_scenario` from `config/config.yaml`.
@@ -48,7 +50,7 @@ If `--scenario` is omitted, the CLI uses `simulation.default_scenario` from `con
 List available scenarios:
 
 ```bash
-python src/run_simulation_moving.py --list-scenarios
+python src/run_simulation.py --list-scenarios
 ```
 
 Scenario definitions are configured under the `scenarios` section in `config/config.yaml`.

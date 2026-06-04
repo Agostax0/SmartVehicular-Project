@@ -1,8 +1,0 @@
-A depth camera is identical to your RGB camera but returns an image where the color of each pixel represents the exact distance (depth) in meters from the lens.
-
-How it works:
-You spawn a Depth Camera at the exact same location as the RGB camera.
-When YOLO detects the walker's bounding box on the RGB image, you look at the same pixel coordinates (cx, cy) on the Depth Camera's output frame.
-The value at that pixel gives you the exact depth $Z$ in meters!
-You calculate the lateral distance $X$ in meters using simple camera trigonometry (camera field of view): $$X = Z \times \tan\left(\text{horizontal angle offset from center}\right)$$
-Best for: A highly realistic, industry-standard camera setup. It is very fast and doesn't require heavy calculations.
