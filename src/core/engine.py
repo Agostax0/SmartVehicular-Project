@@ -1,0 +1,150 @@
+import carla
+import queue
+import numpy as np
+
+from utils.logger import get_logger
+from utils.detector import ObjectDetector
+from utils.visualizer import Visualizer
+from sensors.sensor_manager import SensorManager
+from utils.carla_utils import (
+    image_to_bgr,
+    safe_destroy,
+    spawn_camera,
+    spawn_depth_camera,
+    spawn_vehicle,
+)
+
+from controllers.vehicle_controller import VehicleController
+from core.state import SimulationState
+from core.pedestrian import spawn_pedestrian
+from core.perception import PerceptionSystem
+
+logger = get_logger(__name__)
+
+class SimulationEngine:
+    def __init__(self, config, scenario):
+        self.config = config
+        self.scenario = scenario
+        self.client = carla.Client(config["carla"]["host"], config["carla"]["port"])
+        self.client.set_timeout(config["carla"]["timeout"])
+        self.world = None
+        self.vehicle = None
+        self.walker = None
+        self.sensor_manager = None
+        self.visualizer = None
+        self.detector = ObjectDetector()
+        self.perception = PerceptionSystem(config)
+        self.state = SimulationState()
+        
+    def setup(self):
+        self.world = self.client.get_world()
+        
+        settings = self.world.get_settings()
+        settings.synchronous_mode = True
+        settings.fixed_delta_seconds = 1.0 / self.config["simulation"].get("fps", 20)
+        self.world.apply_settings(settings)
+        logger.info("Connected to CARLA and enabled sync mode: %s", self.world.get_map().name)
+        
+        self.visualizer = Visualizer(
+            width=self.config["sensors"]["camera"]["width"],
+            height=self.config["sensors"]["camera"]["height"],
+            title=f"SmartVehicular Detection - {self.scenario.name}"
+        )
+        
+        self.vehicle, spawn_transform = spawn_vehicle(
+            self.world,
+            spawn_index=0,
+            vehicle_filter=self.config["vehicle"]["blueprint"],
+            autopilot=False,
+        )
+        logger.info("Vehicle spawned: %s at %s", self.vehicle.type_id, spawn_transform.location)
+        
+        self.walker = spawn_pedestrian(self.world, spawn_transform, self.scenario)
+        
+        self.sensor_manager = SensorManager(self.world, self.vehicle)
+        
+        cam_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
+        self.camera = spawn_camera(
+            self.world,
+            self.vehicle,
+            cam_transform,
+            width=self.config["sensors"]["camera"]["width"],
+            height=self.config["sensors"]["camera"]["height"],
+            fov=self.config["sensors"]["camera"]["fov"],
+            tick=0.0,
+        )
+        self.sensor_manager.add_sensor(self.camera)
+        
+        self.depth_camera = spawn_depth_camera(
+            self.world,
+            self.vehicle,
+            cam_transform,
+            width=self.config["sensors"]["camera"]["width"],
+            height=self.config["sensors"]["camera"]["height"],
+            fov=self.config["sensors"]["camera"]["fov"],
+            tick=0.0,
+        )
+        self.sensor_manager.add_sensor(self.depth_camera)
+        
+        self.controller = VehicleController(self.vehicle)
+        
+    def run(self):
+        image_queue = queue.Queue()
+        depth_queue = queue.Queue()
+        
+        self.depth_camera.listen(depth_queue.put)
+        self.camera.listen(image_queue.put)
+        
+        logger.info("Starting simulation loop. Press Ctrl+C or close window to stop.")
+        
+        try:
+            while True:
+                self.world.tick()
+                
+                try:
+                    image = image_queue.get(timeout=2.0)
+                    depth_image = depth_queue.get(timeout=2.0)
+                except queue.Empty:
+                    logger.warning("Timeout waiting for sensor data.")
+                    continue
+
+                self.state.depth_array = self.perception.process_depth(depth_image)
+
+                current_vel = self.vehicle.get_velocity()
+                self.state.ego_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
+
+                # Ego update
+                if self.state.brake_needed:
+                    self.controller.apply_control(throttle=0.0, steer=0.0, brake=1.0)
+                else:
+                    self.controller.apply_throttle(self.scenario.target_speed_mps)
+                
+                bgr_array = image_to_bgr(image)
+                rgb_array = bgr_array[:, :, ::-1]
+                
+                self.state.results = self.detector.detect(rgb_array)
+                self.perception.analyze_detections(self.state, self.scenario)
+                self.state.frame = rgb_array
+
+                if self.state.frame is not None:
+                    if not self.visualizer.update(self.state.frame, self.state.results, self.state.kalman_predictions):
+                        break
+                        
+        except KeyboardInterrupt:
+            logger.info("Simulation stopped by user.")
+        finally:
+            self.cleanup()
+            
+    def cleanup(self):
+        logger.info("Cleaning up actors...")
+        if self.world is not None:
+            settings = self.world.get_settings()
+            settings.synchronous_mode = False
+            settings.fixed_delta_seconds = None
+            self.world.apply_settings(settings)
+            
+        if self.visualizer is not None:
+            self.visualizer.close()
+        if self.sensor_manager is not None:
+            self.sensor_manager.destroy()
+        safe_destroy([self.walker, self.vehicle])

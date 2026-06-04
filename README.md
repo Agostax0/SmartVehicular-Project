@@ -17,6 +17,12 @@ SmartVehicular-Project/
 ├── config/                  # YAML configuration files
 │   └── config.yaml
 ├── src/
+│   ├── core/                # Core simulation logic and orchestration
+│   │   ├── config.py        # Configuration loader
+│   │   ├── engine.py        # Main simulation loop and world management
+│   │   ├── pedestrian.py    # Pedestrian spawning and control logic
+│   │   ├── perception.py    # Perception, detection, and collision risk assessment
+│   │   └── state.py         # Shared simulation state
 │   ├── scenarios/           # Scenario loading and validation utilities
 │   │   └── moving.py
 │   ├── controllers/         # Vehicle control logic
@@ -27,17 +33,27 @@ SmartVehicular-Project/
 │   │   ├── carla_utils.py
 │   │   ├── collision_module.py
 │   │   ├── detector.py
-|   │   ├── kalman.py
-│   |   ├── logger.py
-|   │   └── visualizer.py
+│   │   ├── kalman.py
+│   │   ├── logger.py
+│   │   └── visualizer.py
 │   └── run_simulation.py  # Main CLI entry-point to launch moving scenarios
 ├── tests/                   # Unit tests (pytest)
-|   ├── test_collision.py
+│   ├── test_collision.py
 │   └── test_utils.py
 ├── .gitignore
 ├── README.md
 └── requirements.txt
 ```
+
+### Core Architecture (Refactoring)
+
+The `src/core/` package was introduced to separate concerns from the main entrypoint:
+- **`engine.py`**: Abstracts CARLA client connections, actor lifecycle (setup/teardown), and the main simulation loop.
+- **`perception.py`**: Isolates object detection logic, depth processing, Kalman filtering, and future collision risk assessment.
+- **`pedestrian.py`**: Extracts pedestrian walker spawning logic and offset calculations.
+- **`state.py`**: Provides a unified `SimulationState` object to share variables across loops.
+- **`config.py`**: Centralizes YAML configuration loading.
+
 
 ## Running a simulation
 
