@@ -38,12 +38,3 @@ sensors:
     width: 800
     height: 600
     fov: 60
-  lidar:
-    enabled: false
-    channels: 32
-    range: 50.0
-    points_per_second: 100000
-
-output:
-  directory: "data/output"
-  save_images: false
