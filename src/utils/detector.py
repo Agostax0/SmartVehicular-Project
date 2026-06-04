@@ -22,7 +22,7 @@ class ObjectDetector:
         # COCO class IDs: 0: person, 1: bicycle, 3: motorcycle
         self.target_classes = [0, 1, 3] 
 
-    def detect(self, image, conf=0.20):
+    def detect(self, image, conf=0.10):
         """
         Perform detection on a single image.
         

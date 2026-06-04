@@ -3,6 +3,8 @@ import carla
 import numpy as np
 import typer
 from typing import Optional
+import torch
+import queue
 
 from utils.logger import get_logger
 from utils.kalman import TrajectoryKalmanFilter
@@ -176,43 +178,51 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
         )
         sensor_manager.add_sensor(depth_camera)
         
-        def depth_callback(image):
-            """Convert depth frames into a metric depth array.
+        image_queue = queue.Queue()
+        depth_queue = queue.Queue()
+        
+        depth_camera.listen(depth_queue.put)
+        camera.listen(image_queue.put)
+        
+        logger.info("Starting simulation loop. Press Ctrl+C or close window to stop.")
+        
+        while True:
+            world.tick()
+            
+            # Wait for frames of the current tick synchronously
+            try:
+                image = image_queue.get(timeout=2.0)
+                depth_image = depth_queue.get(timeout=2.0)
+            except queue.Empty:
+                logger.warning("Timeout waiting for sensor data.")
+                continue
 
-            Args:
-                image: CARLA depth camera image.
-
-            Returns:
-                None.
-            """
-            array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
-            array = np.reshape(array, (image.height, image.width, 4))
-            # The depth map from CARLA is coded in RGB as: R + G*256 + B*256*256
+            # --- PROCESS DEPTH ---
+            array = np.frombuffer(depth_image.raw_data, dtype=np.dtype("uint8"))
+            array = np.reshape(array, (depth_image.height, depth_image.width, 4))
             B = array[:, :, 0].astype(np.float32)
             G = array[:, :, 1].astype(np.float32)
             R = array[:, :, 2].astype(np.float32)
             normalized_depth = (R + G * 256.0 + B * 256.0 * 256.0) / (256.0 * 256.0 * 256.0 - 1.0)
-            depth_in_meters = 1000.0 * normalized_depth
-            state.depth_array = depth_in_meters
+            state.depth_array = 1000.0 * normalized_depth
 
-        depth_camera.listen(lambda image: depth_callback(image))
-        
-        def camera_callback(image):
-            """Process camera frames and update detection state.
-
-            Args:
-                image: CARLA camera image.
-
-            Returns:
-                None.
-            """
+            # --- EGO VEHICLE UPDATE ---
+            current_vel = vehicle.get_velocity()
+            current_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
+            state.ego_speed = current_speed
+            target_speed = scenario.target_speed_mps
+            
+            error = target_speed - current_speed
+            throttle = max(0.0, min(1.0, 0.4 * error + 0.1))
+            vehicle.apply_control(carla.VehicleControl(throttle=throttle, steer=0.0))
+            
+            # --- PROCESS RGB & DETECT ---
             bgr_array = image_to_bgr(image)
             rgb_array = bgr_array[:, :, ::-1]
             
-            # Run detection
             results = detector.detect(rgb_array)
             
-            # Kalman Filter Processing
+            # --- KALMAN FILTER ---
             predictions = {}
             if results and results.boxes and results.boxes.id is not None:
                 img_w = config["sensors"]["camera"]["width"]
@@ -222,7 +232,7 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
 
                 for i, box in enumerate(results.boxes):
                     obj_id = int(results.boxes.id[i])
-                    coords = box.xyxy[0].tolist() # [x1, y1, x2, y2]
+                    coords = box.xyxy[0].tolist()
                     
                     x1, y1, x2, y2 = coords
                     cx = (x1 + x2) / 2.0
@@ -246,17 +256,16 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
                         X, Z, ego_vx=0.0, ego_vz=state.ego_speed
                     )
                     
-                    real_v = vel_z - state.ego_speed
-                    risk, msg, ttc = check_collision_risk(est_x, est_z, vel_x, real_v)
-                    print(f"{risk}, {msg}, {ttc}")
-
-
                     future_frames = scenario.prediction_future_frames
                     dt = state.kalman_filters[obj_id].dt
+                    
+                    # Compute future relative distance considering ego motion over time
                     pred_X = est_x + vel_x * dt * future_frames
-                    pred_Z = est_z + vel_z * dt * future_frames
+                    # Since vel_z is absolute pedestrian velocity, subtract ego speed to get relative approach
+                    pred_Z = est_z + (vel_z - state.ego_speed) * dt * future_frames
                     
                     if pred_Z <= 0.5:
+                        print(f"[KALMAN DEBUG] ID {obj_id} skipped: pred_Z ({pred_Z:.2f}) <= 0.5 (est_z={est_z:.2f}, vel_z={vel_z:.2f})")
                         continue
                         
                     pred_cx = (pred_X * f_length) / pred_Z + img_w / 2.0
@@ -276,7 +285,7 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
                     trajectory = []
                     for frm in range(2, future_frames + 1, 4):
                         pt_X = est_x + vel_x * dt * frm
-                        pt_Z = est_z + vel_z * dt * frm
+                        pt_Z = est_z + (vel_z - state.ego_speed) * dt * frm
                         
                         if pt_Z > 0.5: 
                             pt_cx = (pt_X * f_length) / pt_Z + img_w / 2.0
@@ -293,25 +302,6 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
             state.results = results
             state.kalman_predictions = predictions
 
-        camera.listen(lambda image: camera_callback(image))
-        
-        logger.info("Starting simulation loop. Press Ctrl+C or close window to stop.")
-        
-        
-        while True:
-            world.tick()
-            
-            current_vel = vehicle.get_velocity()
-            current_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
-            state.ego_speed = current_speed
-            target_speed = scenario.target_speed_mps
-            
-            error = target_speed - current_speed
-            throttle = max(0.0, min(1.0, 0.4 * error + 0.1))
-            vehicle.apply_control(carla.VehicleControl(throttle=throttle, steer=0.0))
-            
-            #move_spectator_to(vehicle.get_transform(), spectator, distance=9.0, z=3.5, pitch=-16.0)
-            
             if state.frame is not None:
                 if not visualizer.update(state.frame, state.results, state.kalman_predictions):
                     break
