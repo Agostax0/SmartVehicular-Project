@@ -263,10 +263,6 @@ def run_simulation(config_path: str, scenario_name: Optional[str]) -> None:
                     pred_X = est_x + vel_x * dt * future_frames
                     # Since vel_z is absolute pedestrian velocity, subtract ego speed to get relative approach
                     pred_Z = est_z + (vel_z - state.ego_speed) * dt * future_frames
-                    
-                    if pred_Z <= 0.5:
-                        print(f"[KALMAN DEBUG] ID {obj_id} skipped: pred_Z ({pred_Z:.2f}) <= 0.5 (est_z={est_z:.2f}, vel_z={vel_z:.2f})")
-                        continue
                         
                     pred_cx = (pred_X * f_length) / pred_Z + img_w / 2.0
                     
