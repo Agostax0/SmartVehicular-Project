@@ -40,5 +40,6 @@ yolov8n.pt
 *.pdf
 *.gz
 *.toc
+*.out
 
 !report/assets/**
