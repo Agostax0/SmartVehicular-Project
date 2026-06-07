@@ -30,3 +30,15 @@ Thumbs.db
 
 # Yolo model
 yolov8n.pt
+
+
+# LaTeX build files
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.gz
+*.toc
+
+!report/assets/**
