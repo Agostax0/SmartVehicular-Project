@@ -1,6 +1,4 @@
-\section{Technologies Used}
-
-\subsection{Simulation Environment}
+\section{Simulation Environment}
 
 \textbf{CARLA} \href{https://carla.org/}{(https://carla.org/)} - The open-source autonomous driving simulator serves as the foundation for all experiments. CARLA provides:
 \begin{itemize}
@@ -13,7 +11,7 @@
 
 Our implementation leverages CARLA's TCP-IP interface for external control and relies on the simulator's actor lifecycle management and sensor data streaming.
 
-\subsection{Object Detection}
+\section{Object Detection}
 
 \textbf{YOLOv8} \href{https://ultralytics.com/}{(https://ultralytics.com/)} - The object detection backbone for pedestrian/cyclist recognition:
 \begin{itemize}
@@ -25,7 +23,7 @@ Our implementation leverages CARLA's TCP-IP interface for external control and r
 
 We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and accuracy in real-time scenarios. The model processes individual frames with a configurable confidence threshold.
 
-\subsection{Deep Learning Framework}
+\section{Deep Learning Framework}
 
 \textbf{Ultralytics} - The Python SDK for YOLOv8 models:
 \begin{itemize}
@@ -35,7 +33,7 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
     \item Compatible with various model formats (PyTorch, ONNX, TensorRT)
 \end{itemize}
 
-\subsection{Computer Vision}
+\section{Computer Vision}
 
 \textbf{OpenCV} (cv2) - Used for:
 \begin{itemize}
@@ -45,7 +43,7 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
     \item Image-to-matrix conversions
 \end{itemize}
 
-\subsection{Tracking Algorithm}
+\section{Tracking Algorithm}
 
 \textbf{Kalman Filter} - A linear dynamic model for state estimation and prediction:
 \begin{itemize}
@@ -62,7 +60,7 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
     \end{enumerate}
 \end{itemize}
 
-\subsection{Collision Assessment}
+\section{Collision Assessment}
 
 \textbf{Time-to-Collision (TTC)} - A standard metric for collision warning systems:
 \begin{itemize}
@@ -78,7 +76,7 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
     \end{itemize}
 \end{itemize}
 
-\subsection{Visualization}
+\section{Visualization}
 
 \textbf{Pygame} - For real-time rendering and visualization:
 \begin{itemize}
@@ -91,7 +89,7 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
     \item HWSURFACE | DOUBLEBUF for performance optimization
 \end{itemize}
 
-\subsection{CLI Framework}
+\section{CLI Framework}
 
 \textbf{Typer} - A fast, modern command-line interface creator:
 \begin{itemize}
@@ -110,7 +108,7 @@ python src/run_simulation.py \\
   --list-scenarios  # list all available scenarios
 \end{verbatim}
 
-\subsection{Configuration Management}
+\section{Configuration Management}
 
 \textbf{PyYAML} - YAML configuration parsing:
 \begin{itemize}
@@ -120,7 +118,7 @@ python src/run_simulation.py \\
     \item Default value support with \texttt{dict.get()}
 \end{itemize}
 
-\subsection{Numerical Computing}
+\section{Numerical Computing}
 
 \textbf{NumPy} - For numerical operations:
 \begin{itemize}
@@ -130,7 +128,7 @@ python src/run_simulation.py \\
     \item Speed optimization over Python lists
 \end{itemize}
 
-\subsection{Logging}
+\section{Logging}
 
 \textbf{logging module} - Python's built-in logging with:
 \begin{itemize}
@@ -140,7 +138,7 @@ python src/run_simulation.py \\
     \item Custom formatting (if needed)
 \end{itemize}
 
-\subsection{Python Version}
+\section{Python Version}
 
 \textbf{Python 3.7+} - Minimum version requirement for:
 \begin{itemize}
@@ -152,7 +150,7 @@ python src/run_simulation.py \\
     
 \end{itemize}
 
-\subsection{Test Framework}
+\section{Test Framework}
 
 \textbf{pytest} - For automated testing:
 \begin{itemize}
@@ -163,7 +161,7 @@ python src/run_simulation.py \\
     \item Test reports and coverage
 \end{itemize}
 
-\subsection{Project Dependencies}
+\section{Project Dependencies}
 
 \begin{verbatim}
 numpy                  # Numerical computing

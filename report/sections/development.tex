@@ -1,12 +1,10 @@
-\section{Development and Deployment}
-
-\subsection{Project History}
+\section{Project History}
 
 \textbf{Project 18: Pedestrian Crossing Warning with Camera-Depth Fusion}
 
 This project was developed in the framework of an academic initiative to explore the integration of camera-based and depth-sensor-based perception for autonomous driving scenarios, specifically focusing on pedestrian crossing warning systems.
 
-\subsection{Development Team}
+\section{Development Team}
 
 The project was developed by:
 \begin{itemize}
@@ -15,9 +13,9 @@ The project was developed by:
     \item Lorenzo Tosi (lorenzo.tosi10@studio.unibo.it)
 \end{itemize}
 
-\subsection{Development Environment}
+\section{Development Environment}
 
-\subsubsection{Hardware}
+\subsection{Hardware}
 
 \begin{itemize}
     \item CPU: Intel Core i9-13900KS or equivalent
@@ -26,7 +24,7 @@ The project was developed by:
     \item Storage: NVMe SSD
 \end{itemize}
 
-\subsubsection{Software}
+\subsection{Software}
 
 \begin{verbatim}
 Operating System: Ubuntu 22.04 LTS
@@ -34,9 +32,9 @@ Python Version: 3.7
 CARLA Version: 0.9.15
 \end{verbatim}
 
-\subsection{Development Process}
+\section{Development Process}
 
-\subsubsection{Version Control}
+\subsection{Version Control}
 
 We used Git for version control with the following structure:
 \begin{itemize}
@@ -46,7 +44,7 @@ We used Git for version control with the following structure:
     \item Issue branches: \verb|issue/<number>| for bug fixes
 \end{itemize}
 
-\subsubsection{Workflow}
+\subsection{Workflow}
 
 Our development followed an agile approach with:
 \begin{enumerate}
@@ -56,7 +54,7 @@ Our development followed an agile approach with:
     \item Issue tracking via GitHub Issues
 \end{enumerate}
 
-\subsubsection{Code Organization}
+\subsection{Code Organization}
 
 The project is organized into the following packages:
 
@@ -98,7 +96,7 @@ The project is organized into the following packages:
     \item \verb|src/run_simulation.py|: CLI entry point
 \end{itemize}
 
-\subsubsection{Key Implementation Decisions}
+\subsection{Key Implementation Decisions}
 
 \begin{enumerate}
     \item \textbf{CARLA Integration}: Used CARLA's TCP-IP interface for the simulation environment, allowing external control and sensor data access.
@@ -114,9 +112,9 @@ The project is organized into the following packages:
     \item \textbf{YAML Configuration}: Used YAML for configuration due to its human-readability and ease of editing.
 \end{enumerate}
 
-\subsection{Testing}
+\section{Testing}
 
-\subsubsection{Test Structure}
+\subsection{Test Structure}
 
 Tests are organized in the \texttt{tests/} directory:
 
@@ -127,7 +125,7 @@ Tests are organized in the \texttt{tests/} directory:
     \item \texttt{test\_detectors.py}: Tests for detector module (to be added)
 \end{itemize}
 
-\subsubsection{Test Coverage}
+\subsection{Test Coverage}
 
 \begin{itemize}
     \item Collision module: 100\% coverage with 4 test cases
@@ -136,7 +134,7 @@ Tests are organized in the \texttt{tests/} directory:
     \item Detector module: No tests yet
 \end{itemize}
 
-\subsubsection{Test Execution}
+\subsection{Test Execution}
 
 \begin{verbatim}
 # Run all tests
@@ -152,9 +150,9 @@ pytest -v
 pytest --cov=src --cov-report=html
 \end{verbatim}
 
-\subsection{Deployment}
+\section{Deployment}
 
-\subsubsection{Requirements}
+\subsection{Requirements}
 
 To run the project, follow these steps:
 
@@ -174,7 +172,7 @@ pip install -r requirements.txt
 
 \textbf{Additional requirements for simulation:}
 
-\subsubsection{Running Simulations}
+\subsection{Running Simulations}
 
 \textbf{List available scenarios:}
 
@@ -196,7 +194,7 @@ python src/run_simulation.py \\
 python src/run_simulation.py --config config/config.yaml
 \end{verbatim}
 
-\subsubsection{Configuration}
+\subsection{Configuration}
 
 Create a custom \texttt{config.yaml} with your desired parameters:
 
@@ -232,12 +230,12 @@ sensors:
     fov: 60
 \end{verbatim}
 
-\subsubsection{Visualization}
+\subsection{Visualization}
 
 The visualization window appears automatically during simulation. Press \texttt{ESC} or click the X button to close.
-\subsection{Documentation}
+\section{Documentation}
 
-\subsubsection{Report Generation}
+\subsection{Report Generation}
 
 The project includes a LaTeX report that can be compiled:
 
@@ -255,7 +253,7 @@ evince report.pdf  # Ubuntu
 open report.pdf    # Mac
 start report.pdf   # Windows
 \end{verbatim}
-\subsection{Continuous Integration}
+\section{Continuous Integration}
 
 We use GitHub Actions for automated testing and CI/CD:
 
@@ -264,7 +262,7 @@ We use GitHub Actions for automated testing and CI/CD:
     deploy.yml         # Build and deploy on tag release
 \end{verbatim}
 
-\subsubsection{Release Process}
+\subsection{Release Process}
 
 For each release:
 \begin{enumerate}
@@ -277,7 +275,7 @@ For each release:
     \item Update report via report generation
 \end{enumerate}
 
-\subsection{Contributing}
+\section{Contributing}
 
 To contribute to the project:
 \begin{enumerate}
@@ -290,6 +288,6 @@ To contribute to the project:
     \item Update documentation if needed
 \end{enumerate}
 
-\subsection{Known Issues and Future Work}
+\section{Known Issues and Future Work}
 
 See the \textbf{Known Limitations} and \textbf{Future Work} sections in the Results chapter for details on current limitations and planned improvements.

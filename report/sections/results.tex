@@ -1,4 +1,4 @@
-\subsection{Implementation Approach}
+\section{Implementation Approach}
 
 The project was implemented following an incremental development strategy with the following components:
 \begin{enumerate}
@@ -12,11 +12,11 @@ The project was implemented following an incremental development strategy with t
     \item \textbf{Scenarios}: Definition and validation of test scenarios
 \end{enumerate}
 
-\subsection{Unit Tests}
+\section{Unit Tests}
 
 We developed unit tests to verify the correctness of key modules:
 
-\subsubsection{Collision Module Tests}
+\subsection{Collision Module Tests}
 
 The \texttt{check\_collision\_risk()} function was tested with four distinct cases:
 
@@ -32,13 +32,13 @@ The \texttt{check\_collision\_risk()} function was tested with four distinct cas
 
 All test cases passed, validating the collision risk assessment logic.
 
-\subsubsection{Utility Module Tests}
+\subsection{Utility Module Tests}
 
 Basic testing of the \texttt{get\_logger()} utility function to ensure proper logger instantiation and configuration.
 
-\subsection{Functional Analysis}
+\section{Functional Analysis}
 
-\subsubsection{Detection Pipeline}
+\subsection{Detection Pipeline}
 
 The perception pipeline consists of three main stages:
 
@@ -88,7 +88,7 @@ For each detected object:
     \item Compute velocity relative to ego vehicle
 \end{enumerate}
 
-\subsubsection{Kalman Filter Performance}
+\subsection{Kalman Filter Performance}
 
 The 4-state Kalman filter performs predict-correct cycles at simulation frequency (50ms intervals):
 
@@ -118,7 +118,7 @@ The Kalman filter implicitly estimates velocities as part of the state. The rela
 
 This enables accurate TTC calculation and future trajectory prediction.
 
-\subsubsection{Collision Risk Assessment}
+\subsection{Collision Risk Assessment}
 
 The collision assessment module uses a geometric approach based on predicted trajectories:
 
@@ -144,7 +144,7 @@ The system triggers braking when:
     \item Lateral position at impact is within car hitbox plus safety margin
 \end{itemize}
 
-\subsection{Scenario Validation}
+\section{Scenario Validation}
 
 We defined two scenarios for testing:
 
@@ -178,7 +178,7 @@ The validation ensures:
     \item Horizontal offset can be positive (right), negative (left), or zero (directly in front)
 \end{itemize}
 
-\subsection{Known Limitations}
+\section{Known Limitations}
 
 \begin{enumerate}
     \item \textbf{Pedestrian Model}: The simulation uses a simple \texttt{walker} actor that moves independently. Realistic pedestrian behavior (uncertainty, looking behavior, avoidance) would require a more sophisticated model.
@@ -192,7 +192,7 @@ The validation ensures:
     \item \textbf{Track Management}: Missing proper track spawning and deletion logic for handling occlusions and tracking failures.
 \end{enumerate}
 
-\subsection{Future Work}
+\section{Future Work}
 
 \begin{enumerate}
     \item Integrate a more realistic pedestrian model (e.g., from CARLA worldgen)

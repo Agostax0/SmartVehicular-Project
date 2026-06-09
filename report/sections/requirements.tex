@@ -1,12 +1,10 @@
-\section{Requirements}
-
 This section defines the requirements for the SmartVehicular system. Requirements are categorized into \textbf{functional} (what the system must do) and \textbf{non-functional} (how the system must behave).
 
-\subsection{Functional Requirements}
+\section{Functional Requirements}
 
 Functional requirements describe the specific functionality that the system must provide:
 
-\subsubsection{FR-1: Pedestrian / Cyclist Detection}
+\subsection{FR-1: Pedestrian / Cyclist Detection}
 
 \begin{itemize}
     \item The system shall detect pedestrians and bicyclists in the simulation environment.
@@ -22,7 +20,7 @@ Functional requirements describe the specific functionality that the system must
     \item Track ID consistency across frames
 \end{itemize}
 
-\subsubsection{FR-2: Multi-Sensor Fusion}
+\subsection{FR-2: Multi-Sensor Fusion}
 
 \begin{itemize}
     \item The system shall utilize multiple sensor modalities: RGB camera, depth camera, and optionally LiDAR.
@@ -37,7 +35,7 @@ Functional requirements describe the specific functionality that the system must
     \item Graceful degradation when sensors are unavailable
 \end{itemize}
 
-\subsubsection{FR-3: Trajectory and Collision Estimation}
+\subsection{FR-3: Trajectory and Collision Estimation}
 
 \begin{itemize}
     \item The system shall estimate pedestrian trajectories using a Kalman filter.
@@ -58,7 +56,7 @@ Functional requirements describe the specific functionality that the system must
     \item Correct classification of safe/warning/critical states
 \end{itemize}
 
-\subsubsection{FR-4: Collision Warning}
+\subsection{FR-4: Collision Warning}
 
 \begin{itemize}
     \item The system shall trigger collision warnings based on TTC thresholds.
@@ -78,11 +76,11 @@ Functional requirements describe the specific functionality that the system must
     \item False negative rate $<$ 10\%
 \end{itemize}
 
-\subsection{Non-Functional Requirements}
+\section{Non-Functional Requirements}
 
 Non-functional requirements describe the quality attributes and constraints of the system:
 
-\subsubsection{NFR-1: Configurability}
+\subsection{NFR-1: Configurability}
 
 \begin{itemize}
     \item The system shall support configurable simulation scenarios via a YAML configuration file.
@@ -102,7 +100,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Support for at least 3 distinct scenarios
 \end{itemize}
 
-\subsubsection{NFR-2: Robustness in Detection}
+\subsection{NFR-2: Robustness in Detection}
 
 \begin{itemize}
     \item The system shall maintain robust detection under varying conditions:
@@ -122,7 +120,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Graceful handling of detection failures
 \end{itemize}
 
-\subsubsection{NFR-3: Responsiveness}
+\subsection{NFR-3: Responsiveness}
 
 \begin{itemize}
     \item The system shall provide real-time visualization of:
@@ -142,7 +140,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Immediate response to user commands
 \end{itemize}
 
-\subsubsection{NFR-4: Performance}
+\subsection{NFR-4: Performance}
 
 \begin{itemize}
     \item The system shall meet the following performance targets on reference hardware:
@@ -162,7 +160,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Efficient memory management (no memory leaks)
 \end{itemize}
 
-\subsubsection{NFR-5: Cross-Platform Compatibility}
+\subsection{NFR-5: Cross-Platform Compatibility}
 
 \begin{itemize}
     \item The system shall run on:
@@ -181,7 +179,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Python version compatibility (Python 3.7+)
 \end{itemize}
 
-\subsubsection{NFR-6: Code Quality}
+\subsection{NFR-6: Code Quality}
 
 \begin{itemize}
     \item The code shall follow best practices:
@@ -201,7 +199,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Docstrings for all public functions and classes
 \end{itemize}
 
-\subsection{Technical Constraints}
+\section{Technical Constraints}
 
 \begin{itemize}
     \item CARLA version: 0.9.15 (minimum supported version)
@@ -216,7 +214,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Network: 1 Gbps for CARLA client-server communication (if using TCP-IP mode)
 \end{itemize}
 
-\subsection{Assumptions}
+\section{Assumptions}
 
 \begin{itemize}
     \item Users have access to a CARLA simulation environment (local or remote)
@@ -226,7 +224,7 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Depth camera provides accurate depth measurements (no calibration errors)
 \end{itemize}
 
-\subsection{Dependencies}
+\section{Dependencies}
 
 
 \begin{verbatim}
@@ -243,7 +241,7 @@ pytest                 # Testing framework for Python projects
 carla                  # CARLA autonomous driving simulator client
 \end{verbatim}
 
-\subsection{Deliverables}
+\section{Deliverables}
 
 \begin{itemize}
     \item \textbf{Source Code}: Complete implementation in Python with modular structure
