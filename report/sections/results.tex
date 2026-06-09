@@ -44,6 +44,7 @@ The perception pipeline consists of three main stages:
 
 \begin{figure}[h]
     \centering
+    \begin{verbatim}
     \begin{tikzpicture}[>=latex, scale=0.8]
         \node (input) {Sensor Inputs};
         \node (depth) [right=2cm of input] {Depth Map};
@@ -58,6 +59,7 @@ The perception pipeline consists of three main stages:
         \draw[->, thick, orange] (detect) -> (kalman);
         \draw[->, thick, purple] (kalman) -> (risk);
     \end{tikzpicture}
+    \end{verbatim}
     \caption{Perception pipeline data flow}
 \end{figure}
 

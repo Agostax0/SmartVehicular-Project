@@ -5,26 +5,33 @@ This project implements a modular architecture to separate concerns and enable e
 \begin{figure}[h]
     \centering
     \begin{center}
-    \begin{tikzpicture}[node distance=1.5cm,>=latex]
-        % Top layer
-        \node (core) {Core};
-        \node (controllers) [below left=of core, xshift=-1cm] {Controllers};
-        \node (sensors) [below right=of core, xshift=1cm] {Sensors};
-        
-        % Utils
-        \node (utils) [below=of core] {Utils};
-        \node (scenarios) [below=of controllers, right=of utils] {Scenarios};
-        
-        % Connections to Utils
-        \draw[->] (core) -- (utils);
-        \draw[->] (controllers) -- (utils);
-        \draw[->] (sensors) -- (utils);
-        
-        % Scenario flows
-        \draw[->, dashed] (scenarios) -- (controllers);
-        \draw[->, dashed] (scenarios) -- (core);
-    \end{tikzpicture}
-    \caption{High-level system architecture}
+    \begin{verbatim}
+    \begin{tikzpicture}[node distance=1.5cm, >=latex]
+    
+      % Top row
+      \node (controllers) {Controllers};
+      \node (core)        [right=2cm of controllers] {Core};
+      \node (sensors)     [right=2cm of core]        {Sensors};
+    
+      % Middle row
+      \node (utils)       [below=1.5cm of core]      {Utils};
+    
+      % Bottom row
+      \node (scenarios)   [below=1.5cm of utils]     {Scenarios};
+    
+      % Connections to Utils
+      \draw[->] (core)        -- (utils);
+      \draw[->] (controllers) -- (utils);
+      \draw[->] (sensors)     -- (utils);
+    
+      % Scenario flows
+      \draw[->, dashed] (scenarios) -- (utils);
+      \draw[->, dashed] (scenarios.west) to[out=180, in=270] (controllers.south);
+      \draw[->, dashed] (scenarios.east) to[out=0,   in=270] (core.south);
+    
+    \end{tikzpicture}   \caption{High-level system architecture}
+    
+    \end{verbatim}
     \end{center}
 \end{figure}
 
@@ -170,6 +177,7 @@ The main simulation loop follows this sequence:
 \begin{figure}[h]
     \centering
     \begin{center}
+    \begin{verbatim}
     \begin{tikzpicture}[>=latex]
         \node (init) [draw, fill=blue!10] {Initialize};
         \node (setup) [draw, fill=blue!10, right=2cm] {Setup (CARLA, Sensors)};
@@ -193,6 +201,7 @@ The main simulation loop follows this sequence:
         
         \draw[->, thick, gray] (loop) |- (cleanup);
     \end{tikzpicture}
+    \end{verbatim}
     \caption{Simulation flow diagram}
     \end{center}
 \end{figure}
