@@ -31,7 +31,7 @@ While cameras provide rich semantic information (object recognition, scene under
 
 This fusion allows us to:
 \begin{enumerate}
-    \item Detect objects (pedestrians, bicyclists) in 2D image space using YOLOv8
+    \item Detect objects (pedestrians) in 2D image space using YOLOv8
     \item Use depth values at detection locations to infer 3D positions
     \item Combine both modalities for more robust and accurate predictions
 \end{enumerate}
@@ -41,7 +41,7 @@ This fusion allows us to:
 The project aims to achieve three main objectives:
 
 \begin{enumerate}
-    \item \textbf{Pedestrian/Cyclist Recognition}: Use YOLOv8 object detection to identify and track pedestrians and bicyclists in the scene.
+    \item \textbf{Pedestrian Recognition}: Use YOLOv8 object detection to identify and track pedestrians in the scene.
     
     \item \textbf{Trajectory Estimation}: Use a Kalman filter to track pedestrian trajectories in 3D space and estimate velocities relative to the ego vehicle.
     
@@ -64,8 +64,8 @@ By achieving these objectives, we expect the system to:
 This project focuses on:
 \begin{itemize}
     \item \textbf{Scenario}: Single vehicle driving in an urban environment with pedestrians
-    \item \textbf{Sensors}: Front-facing RGB and depth cameras only
-    \item \textbf{Objects}: Pedestrians (walker) and bicyclists only
+    \item \textbf{Sensors}: Front-facing RGB and depth cameras only. We specifically excluded LiDAR sensors as they are extremely resource-intensive to simulate and process.
+    \item \textbf{Objects}: Pedestrians (walker) only
     \item \textbf{Environment}: CARLA Town03 urban map
     \item \textbf{Control}: Simple velocity-based control (no lane keeping, no path planning)
 \end{itemize}

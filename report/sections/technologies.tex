@@ -13,11 +13,11 @@ Our implementation leverages CARLA's TCP-IP interface for external control and r
 
 \section{Object Detection}
 
-\textbf{YOLOv8} \href{https://ultralytics.com/}{(https://ultralytics.com/)} - The object detection backbone for pedestrian/cyclist recognition:
+\textbf{YOLOv8} \href{https://ultralytics.com/}{(https://ultralytics.com/)} - The object detection backbone for pedestrian recognition:
 \begin{itemize}
     \item \textbf{Model variants}: YOLOv8n (nano), s (small), m (medium), l (large), x (extra-large)
     \item \textbf{Tracking mode}: \texttt{model.track()} enables persistent object IDs across frames for tracking
-    \item \textbf{Object classes}: Configurable subset of COCO classes (person ID=0, bicycle=1, motorcycle=3)
+    \item \textbf{Object classes}: Configurable subset of COCO classes (person ID=0)
     \item \textbf{Output}: Bounding boxes (xyxy format), confidence scores, class IDs, track IDs
 \end{itemize}
 

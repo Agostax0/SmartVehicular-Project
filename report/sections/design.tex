@@ -3,33 +3,33 @@ This project implements a modular architecture to separate concerns and enable e
 \begin{figure}[h]
     \centering
     \begin{center}
-    \begin{verbatim}
-    \begin{tikzpicture}[node distance=1.5cm, >=latex]
+    \begin{tikzpicture}[node distance=2cm, >=latex]
+      \tikzset{
+        module/.style={draw, fill=blue!10, rounded corners, minimum height=1.2cm, minimum width=2.5cm, align=center, font=\bfseries},
+        submodule/.style={draw, fill=yellow!10, rounded corners, minimum height=1.2cm, minimum width=2.5cm, align=center},
+        flow/.style={->, thick},
+        dep/.style={->, dashed, thick, draw=gray}
+      }
     
-      % Top row
-      \node (controllers) {Controllers};
-      \node (core)        [right=2cm of controllers] {Core};
-      \node (sensors)     [right=2cm of core]        {Sensors};
+      % Nodes
+      \node[module] (core) {Core};
+      \node[module, left=2cm of core] (controllers) {Controllers};
+      \node[module, right=2cm of core] (sensors) {Sensors};
+      
+      \node[submodule, fill=green!10, below=2cm of core] (utils) {Utils};
+      \node[submodule, fill=orange!10, below=2cm of utils] (scenarios) {Scenarios};
     
-      % Middle row
-      \node (utils)       [below=1.5cm of core]      {Utils};
+      % Connections
+      \draw[flow] (core) -- (utils);
+      \draw[flow] (controllers) |- (utils);
+      \draw[flow] (sensors) |- (utils);
     
-      % Bottom row
-      \node (scenarios)   [below=1.5cm of utils]     {Scenarios};
+      \draw[dep] (scenarios) -- (utils);
+      \draw[dep] (scenarios.west) -| (controllers.south);
+      \draw[dep] (scenarios.east) -| (core.south);
     
-      % Connections to Utils
-      \draw[->] (core)        -- (utils);
-      \draw[->] (controllers) -- (utils);
-      \draw[->] (sensors)     -- (utils);
-    
-      % Scenario flows
-      \draw[->, dashed] (scenarios) -- (utils);
-      \draw[->, dashed] (scenarios.west) to[out=180, in=270] (controllers.south);
-      \draw[->, dashed] (scenarios.east) to[out=0,   in=270] (core.south);
-    
-    \end{tikzpicture}   \caption{High-level system architecture}
-    
-    \end{verbatim}
+    \end{tikzpicture}
+    \caption{High-level system architecture}
     \end{center}
 \end{figure}
 
@@ -124,9 +124,9 @@ The utils module provides reusable utilities:
     \item \textbf{CARLA Utils} - Helper functions for:
     \begin{itemize}
         \item Vehicle/pedestrian spawning
-        \item Camera/LiDAR/Radar sensor setup
+        \item Camera/Radar sensor setup
         \item Image conversions (BGR to RGB)
-        \item Lidar data conversion
+        \item Depth data conversion
         \item Safe actor destruction
     \end{itemize}
     
@@ -175,31 +175,36 @@ The main simulation loop follows this sequence:
 \begin{figure}[h]
     \centering
     \begin{center}
-    \begin{verbatim}
     \begin{tikzpicture}[>=latex]
-        \node (init) [draw, fill=blue!10] {Initialize};
-        \node (setup) [draw, fill=blue!10, right=2cm] {Setup (CARLA, Sensors)};
-        \node (loop) [draw, fill=yellow!10, right=2cm of setup] {Simulation Loop};
-        \node (detect) [draw, fill=green!10, right=2cm of loop] {Detect (YOLOv8)};
-        \node (track) [draw, fill=green!10, right=2cm of detect] {Track (Kalman)};
-        \node (assess) [draw, fill=red!10, right=2cm of track] {Assess Risk (TTC)};
-        \node (control) [draw, fill=orange!10, right=2cm of assess] {Control};
-        \node (viz) [draw, fill=blue!10, right=2cm of control] {Visualize};
-        \node (cleanup) [draw, fill=gray!10, below=2cm of setup] {Cleanup};
+        \tikzset{
+            block/.style={draw, rounded corners, minimum height=1cm, minimum width=2.5cm, align=center, font=\small},
+            arrow/.style={->, thick}
+        }
         
-        \draw[->, thick, red] (init) -> (setup);
-        \draw[->, thick, red] (setup) -> (loop);
+        \node[block, fill=blue!10] (init) at (0, 0) {Initialize};
+        \node[block, fill=blue!10] (setup) at (4, 0) {Setup\\(CARLA, Sensors)};
+        \node[block, fill=yellow!10] (loop) at (8, 0) {Simulation\\Loop};
         
-        \draw[->, thick, blue, dashed] (loop) -> (detect);
-        \draw[->, thick, blue, dashed] (detect) -> (track);
-        \draw[->, thick, blue, dashed] (track) -> (assess);
-        \draw[->, thick, blue, dashed] (assess) -> (control);
-        \draw[->, thick, blue, dashed] (control) -> (viz);
-        \draw[->, thick, blue, dashed] (viz) -> (loop);
+        \node[block, fill=green!10] (detect) at (8, -2) {Detect\\(YOLOv8)};
+        \node[block, fill=green!10] (track) at (4, -2) {Track\\(Kalman)};
+        \node[block, fill=red!10] (assess) at (0, -2) {Assess Risk\\(TTC)};
         
-        \draw[->, thick, gray] (loop) |- (cleanup);
+        \node[block, fill=orange!10] (control) at (0, -4) {Control};
+        \node[block, fill=blue!10] (viz) at (4, -4) {Visualize};
+        \node[block, fill=gray!10] (cleanup) at (8, -4) {Cleanup};
+        
+        \draw[arrow, red] (init) -- (setup);
+        \draw[arrow, red] (setup) -- (loop);
+        
+        \draw[arrow, blue, dashed] (loop) -- (detect);
+        \draw[arrow, blue, dashed] (detect) -- (track);
+        \draw[arrow, blue, dashed] (track) -- (assess);
+        \draw[arrow, blue, dashed] (assess) -- (control);
+        \draw[arrow, blue, dashed] (control) -- (viz);
+        
+        \draw[arrow, blue, dashed] (viz.south) -- (4, -4.8) -| (9.8, 0) -- (loop.east);
+        \draw[arrow, gray] (loop.north) -- (8, 0.8) -| (10.6, -4) -- (cleanup.east);
     \end{tikzpicture}
-    \end{verbatim}
     \caption{Simulation flow diagram}
     \end{center}
 \end{figure}

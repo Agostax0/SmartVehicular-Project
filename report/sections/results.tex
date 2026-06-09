@@ -3,7 +3,7 @@
 The project was implemented following an incremental development strategy with the following components:
 \begin{enumerate}
     \item \textbf{Simulation Engine}: Basic CARLA connection, vehicle spawning, and synchronous simulation loop
-    \item \textbf{Object Detection}: Integration of YOLOv8 for pedestrian/cyclist detection
+    \item \textbf{Object Detection}: Integration of YOLOv8 for pedestrian detection
     \item \textbf{Depth Processing}: Conversion of depth camera data to normalized distance map
     \item \textbf{Kalman Tracking}: Implementation of 2D trajectory Kalman filter for object tracking
     \item \textbf{Collision Assessment}: TTC-based collision risk calculation
@@ -44,22 +44,25 @@ The perception pipeline consists of three main stages:
 
 \begin{figure}[h]
     \centering
-    \begin{verbatim}
-    \begin{tikzpicture}[>=latex, scale=0.8]
-        \node (input) {Sensor Inputs};
-        \node (depth) [right=2cm of input] {Depth Map};
-        \node (img) [below=2cm of depth] {RGB Image};
-        \node (detect) [right=2cm of depth] {Detection};
-        \node (kalman) [right=2cm of detect] {Tracking};
-        \node (risk) [below=2cm of kalman] {Risk Assessment};
+    \begin{tikzpicture}[>=latex]
+        \tikzset{
+            block/.style={draw, rounded corners, minimum height=1cm, minimum width=2.5cm, align=center, font=\small},
+            arrow/.style={->, thick}
+        }
         
-        \draw[->, thick, blue] (input) -> (depth);
-        \draw[->, thick, red] (depth) -> (img);
-        \draw[->, thick, green] (img) -> (detect);
-        \draw[->, thick, orange] (detect) -> (kalman);
-        \draw[->, thick, purple] (kalman) -> (risk);
+        \node[block, fill=gray!10] (input) at (0, 0) {Sensor\\Inputs};
+        \node[block, fill=blue!10] (depth) at (3.5, 0) {Depth Map};
+        \node[block, fill=red!10] (img) at (3.5, -2) {RGB Image};
+        \node[block, fill=green!10] (detect) at (7.5, -2) {Detection};
+        \node[block, fill=orange!10] (kalman) at (11.5, -2) {Tracking};
+        \node[block, fill=purple!10] (risk) at (11.5, 0) {Risk\\Assessment};
+        
+        \draw[arrow, blue] (input) -- (depth);
+        \draw[arrow, red] (depth) -- (img);
+        \draw[arrow, green] (img) -- (detect);
+        \draw[arrow, orange] (detect) -- (kalman);
+        \draw[arrow, purple] (kalman) -- (risk);
     \end{tikzpicture}
-    \end{verbatim}
     \caption{Perception pipeline data flow}
 \end{figure}
 
@@ -75,7 +78,7 @@ YOLOv8 tracks objects across frames and returns:
 \begin{itemize}
     \item Bounding boxes (x1, y1, x2, y2) in image coordinates
     \item Confidence scores for each detection
-    \item Class IDs (0: person, 1: bicycle, 3: motorcycle)
+    \item Class IDs (0: person)
     \item Track IDs for persistent tracking across frames
 \end{itemize}
 

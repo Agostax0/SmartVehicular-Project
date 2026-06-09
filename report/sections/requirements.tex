@@ -4,10 +4,10 @@ This section defines the requirements for the SmartVehicular system. Requirement
 
 Functional requirements describe the specific functionality that the system must provide:
 
-\subsection{FR-1: Pedestrian / Cyclist Detection}
+\subsection{FR-1: Pedestrian Detection}
 
 \begin{itemize}
-    \item The system shall detect pedestrians and bicyclists in the simulation environment.
+    \item The system shall detect pedestrians in the simulation environment.
     \item Detection shall be performed using a deep learning-based object detector (YOLOv8).
     \item The system shall output bounding boxes with class labels and confidence scores.
     \item Detection shall support tracking with persistent object IDs across frames.
@@ -23,7 +23,7 @@ Functional requirements describe the specific functionality that the system must
 \subsection{FR-2: Multi-Sensor Fusion}
 
 \begin{itemize}
-    \item The system shall utilize multiple sensor modalities: RGB camera, depth camera, and optionally LiDAR.
+    \item The system shall utilize multiple sensor modalities: RGB camera and depth camera. LiDAR is not utilized due to its high resource intensity.
     \item The system shall fuse data from all available sensors to improve detection and tracking robustness.
     \item The system shall handle sensor failures gracefully (e.g., camera blocked, depth unavailable).
 \end{itemize}
