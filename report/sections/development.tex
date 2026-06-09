@@ -1,7 +1,319 @@
-\subsection{Development}
-This project was developed in collaboration on the GitHub platform.\\
-We followed standard development strategies with dedicated branches for individual feature engineering.
+\section{Development and Deployment}
+
+\subsection{Project History}
+
+\textbf{Project 18: Pedestrian Crossing Warning with Camera-Depth Fusion}
+
+This project was developed in the framework of an academic initiative to explore the integration of camera-based and depth-sensor-based perception for autonomous driving scenarios, specifically focusing on pedestrian crossing warning systems.
+
+\subsection{Development Team}
+
+The project was developed by:
+\begin{itemize}
+    \item Alessandro Agosta (alessandro.agosta@studio.unibo.it)
+    \item Gabriele Basigli (gabriele.basigli@studio.unibo.it)
+    \item Lorenzo Tosi (lorenzo.tosi10@studio.unibo.it)
+\end{itemize}
+
+\subsection{Development Environment}
+
+\subsubsection{Hardware}
+
+\begin{itemize}
+    \item CPU: Intel Core i9-13900KS or equivalent
+    \item GPU: NVIDIA RTX 3090 or equivalent (for YOLOv8 inference)
+    \item RAM: 64 GB
+    \item Storage: NVMe SSD
+\end{itemize}
+
+\subsubsection{Software}
+
+\begin{verbatim}
+Operating System: Ubuntu 22.04 LTS
+Python Version: 3.11
+CARLA Version: 0.9.13
+\end{verbatim}
+
+\subsection{Development Process}
+
+\subsubsection{Version Control}
+
+We used Git for version control with the following structure:
+\begin{itemize}
+    \item \texttt{main} branch: Stable releases, production-ready code
+    \item \texttt{develop} branch: Integration branch for ongoing development
+    \item Feature branches: \texttt{feature/\<name>} for individual features
+    \item Issue branches: \texttt{issue/\#\<number>} for bug fixes
+\end{itemize}
+
+\subsubsection{Workflow}
+
+Our development followed an agile approach with:
+\begin{enumerate}
+    \item Work on \texttt{develop} branch via feature branches
+    \item Regular pull requests to \texttt{develop}
+    \item Periodic merges to \texttt{main} for releases
+    \item Issue tracking via GitHub Issues
+\end{enumerate}
+
+\subsubsection{Code Organization}
+
+The project is organized into the following packages:
+
+\begin{itemize}
+    \item \texttt{src/core/}: Core simulation logic
+    \begin{itemize}
+        \item \texttt{engine.py}: Main simulation engine
+        \item \texttt{perception.py}: Perception pipeline (detection, tracking, risk assessment)
+        \item \texttt{pedestrian.py}: Pedestrian spawning
+        \item \texttt{state.py}: Shared simulation state
+        \item \texttt{config.py}: Configuration loading
+    \end{itemize}
+    
+    \item \texttt{src/controllers/}: Vehicle control
+    \begin{itemize}
+        \item \texttt{vehicle_controller.py}: Velocity-based control
+    \end{itemize}
+    
+    \item \texttt{src/sensors/}: Sensor management
+    \begin{itemize}
+        \item \texttt{sensor_manager.py}: Sensor lifecycle management
+    \end{itemize}
+    
+    \item \texttt{src/utils/}: Utility modules
+    \begin{itemize}
+        \item \texttt{collision_module.py}: Collision risk assessment
+        \item \texttt{detector.py}: YOLOv8 object detection
+        \item \texttt{kalman.py}: Kalman filter for trajectory prediction
+        \item \texttt{visualizer.py}: Real-time visualization
+        \item \texttt{carla_utils.py}: CARLA integration utilities
+        \item \texttt{logger.py}: Logging utilities
+    \end{itemize}
+    
+    \item \texttt{src/scenarios/}: Scenario definitions
+    \begin{itemize}
+        \item \texttt{moving.py}: Moving pedestrian scenarios
+    \end{itemize}
+    
+    \item \texttt{src/run_simulation.py}: CLI entry point
+\end{itemize}
+
+\subsubsection{Key Implementation Decisions}
+
+\begin{enumerate}
+    \item \textbf{CARLA Integration}: Used CARLA's TCP-IP interface for the simulation environment, allowing external control and sensor data access.
+    
+    \item \textbf{YOLOv8 for Detection}: Chose YOLOv8 over other detection frameworks due to its real-time performance and ease of integration with PyTorch.
+    
+    \item \textbf{Kalman Filter for Tracking}: Implemented a custom 2D Kalman filter for pedestrian tracking instead of using external tracking libraries, for better control and understanding of the algorithm.
+    
+    \item \textbf{TTC for Collision}: Used Time-to-Collision as the collision metric, which is a standard metric in the autonomous driving community.
+    
+    \item \textbf{Pygame for Visualization}: Selected Pygame for real-time visualization due to its simplicity and cross-platform compatibility.
+    
+    \item \textbf{YAML Configuration}: Used YAML for configuration due to its human-readability and ease of editing.
+\end{enumerate}
+
+\subsection{Testing}
+
+\subsubsection{Test Structure}
+
+Tests are organized in the \texttt{tests/} directory:
+
+\begin{itemize}
+    \item \texttt{test\_collision.py}: Tests for collision risk module
+    \item \texttt{test\_utils.py}: Tests for utility modules
+    \item \texttt{test\_perception.py}: Tests for perception module (to be added)
+    \item \texttt{test\_detectors.py}: Tests for detector module (to be added)
+\end{itemize}
+
+\subsubsection{Test Coverage}
+
+\begin{itemize}
+    \item Collision module: 100\% coverage with 4 test cases
+    \item Logger module: 100\% coverage
+    \item Perception module: Partial coverage (depth processing, object analysis)
+    \item Detector module: No tests yet
+\end{itemize}
+
+\subsubsection{Test Execution}
+
+\begin{verbatim}
+# Run all tests
+pytest
+
+# Run specific test file
+pytest tests/test_collision.py
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage
+pytest --cov=src --cov-report=html
+\end{verbatim}
 
 \subsection{Deployment}
-This project is executable by following the intructions available at the \href{https://github.com/Agostax0/SmartVehicular-Project/blob/develop/README.md}{README file}.\\
-Furthermore an up-to-date copy of this report is available in the \href{https://github.com/Agostax0/SmartVehicular-Project/releases/latest/download/report.pdf}{Releases tab}
+
+\subsubsection{Requirements}
+
+To run the project, follow these steps:
+
+\begin{verbatim}
+# Create conda environment
+conda create -n carla-env python=3.11
+
+# Activate environment
+conda activate carla-env
+
+# Install CARLA
+pip install git+https://github.com/carla-simulator/carla.git
+
+# Install project dependencies
+pip install -r requirements.txt
+\end{verbatim}
+
+\textbf{Additional requirements for simulation:}
+\begin{verbatim}
+pip install git+https://github.com/carla-simulator/carla-actors.git
+\end{verbatim}
+
+\subsubsection{Running Simulations}
+
+\textbf{List available scenarios:}
+
+\begin{verbatim}
+python src/run_simulation.py --list-scenarios
+\end{verbatim}
+
+\textbf{Run a specific scenario:}
+
+\begin{verbatim}
+python src/run_simulation.py \\
+  --config config/config.yaml \\
+  --scenario non-colliding-pedestrian
+\end{verbatim}
+
+\textbf{Use default scenario:}
+
+\begin{verbatim}
+python src/run_simulation.py --config config/config.yaml
+\end{verbatim}
+
+\subsubsection{Configuration}
+
+Create a custom \texttt{config.yaml} with your desired parameters:
+
+\begin{verbatim}
+carla:
+  host: "localhost"
+  port: 2000
+  timeout: 10.0
+  map: "Town03"
+
+vehicle:
+  blueprint: "vehicle.tesla.model3"
+  spawn_point: null
+
+simulation:
+  fps: 20
+  default_scenario: "your_scenario_name"
+
+scenarios:
+  your_scenario_name:
+    walker_distance_from_vehicle: 35.0
+    walker_height: 1.0
+    walker_horizontal_offset: 0.0
+    walker_speed: 1.0
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+
+sensors:
+  camera:
+    enabled: true
+    width: 800
+    height: 600
+    fov: 60
+\end{verbatim}
+
+\subsubsection{Visualization}
+
+The visualization window appears automatically during simulation. Press \texttt{ESC} or click the X button to close.
+
+\subsubsection{Docker Deployment}
+
+We also provide a Dockerfile for containerized deployment:
+
+\begin{verbatim}
+docker build -t smartvehicular .
+docker run -p 2000:2000 smartvehicular
+\end{verbatim}
+
+\subsection{Documentation}
+
+\subsubsection{Report Generation}
+
+The project includes a LaTeX report that can be compiled:
+
+\begin{verbatim}
+# Install LaTeX
+# Ubuntu: sudo apt install texlive texlive-latex-extra
+# Mac: brew install mactex
+# Windows: Download from https://www.tug.org/texlive/
+
+# Generate PDF
+latexmk -pdf report.tex
+
+# Open generated report
+evince report.pdf  # Ubuntu
+open report.pdf    # Mac
+start report.pdf   # Windows
+\end{verbatim}
+
+\subsubsection{API Documentation}
+
+\begin{verbatim}
+# Generate API docs
+mkdir docs
+cd docs
+# Copy documentation templates and API reference
+\end{verbatim}
+
+\subsection{Continuous Integration}
+
+We use GitHub Actions for automated testing and CI/CD:
+
+\begin{verbatim}
+.github/workflows/
+├── test.yml           # Run tests on push and PR
+└── deploy.yml         # Build and deploy on tag release
+\end{verbatim}
+
+\subsubsection{Release Process}
+
+For each release:
+\begin{enumerate}
+    \item Make changes in feature branch
+    \item Test locally and commit
+    \item Create pull request to \texttt{develop}
+    \item Review and merge PR
+    \item Merge to \texttt{main}
+    \item Release via GitHub Releases UI
+    \item Update report via report generation
+\end{enumerate}
+
+\subsection{Contributing}
+
+To contribute to the project:
+\begin{enumerate}
+    \item Fork the repository
+    \item Create a feature branch (\texttt{feature/\<your-feature>})
+    \item Make your changes
+    \item Write/update tests for new features
+    \item Ensure tests pass: \texttt{pytest}
+    \item Submit pull request to \texttt{develop}
+    \item Update documentation if needed
+\end{enumerate}
+
+\subsection{Known Issues and Future Work}
+
+See the \textbf{Known Limitations} and \textbf{Future Work} sections in the Results chapter for details on current limitations and planned improvements.

@@ -1,1 +1,234 @@
-design.tex
+\section{System Architecture}
+
+This project implements a modular architecture to separate concerns and enable efficient development. The system is organized into several key components:
+
+\begin{figure}[h]
+    \centering
+    \begin{center}
+    \begin{tikzpicture}[node distance=1.5cm,>=latex]
+        % Top layer
+        \node (core) {Core};
+        \node (controllers) [below left=of core, xshift=-1cm] {Controllers};
+        \node (sensors) [below right=of core, xshift=1cm] {Sensors};
+        
+        % Utils
+        \node (utils) [below=of core] {Utils};
+        \node (scenarios) [below=of controllers, right=of utils] {Scenarios};
+        
+        % Connections to Utils
+        \draw[->] (core) -- (utils);
+        \draw[->] (controllers) -- (utils);
+        \draw[->] (sensors) -- (utils);
+        
+        % Scenario flows
+        \draw[->, dashed] (scenarios) -- (controllers);
+        \draw[->, dashed] (scenarios) -- (core);
+    \end{tikzpicture}
+    \caption{High-level system architecture}
+    \end{center}
+\end{figure}
+
+\subsection{Core Module}
+
+The core module contains the fundamental logic of the simulation system:
+
+\begin{itemize}
+    \item \textbf{SimulationEngine} - The main orchestrator that initializes CARLA, manages the simulation loop, and coordinates all components. It handles:
+    \begin{itemize}
+        \item CARLA client connection and world setup
+        \item Vehicle spawning and configuration
+        \item Sensor setup (RGB and depth cameras)
+        \item Pedestrian spawning based on scenario
+        \item Main simulation loop with camera callbacks
+    \end{itemize}
+    
+    \item \textbf{PerceptionSystem} - Handles the perception pipeline:
+    \begin{itemize}
+        \item Depth image processing (normalization)
+        \item Object detection results processing
+        \item Kalman filter initialization and updates for each detected object
+        \item Trajectory prediction for future frames
+        \item Collision risk assessment using TTC (Time-to-Collision)
+    \end{itemize}
+    
+    \item \textbf{SimulationState} - A shared state object that passes data between the camera callbacks and the main simulation loop. Contains:
+    \begin{itemize}
+        \item \texttt{frame}: Current RGB image
+        \item \texttt{depth\_array}: Processed depth map
+        \item \texttt{results}: Object detection results
+        \item \texttt{kalman\_predictions}: Dictionary of predicted bounding boxes
+        \item \texttt{kalman\_filters}: Dictionary of Kalman filter instances
+        \item \texttt{ego\_speed}: Current ego-vehicle speed
+        \item \texttt{brake\_needed}: Flag indicating if braking is required
+    \end{itemize}
+    
+    \item \textbf{ConfigLoader} - Loads YAML configuration files and provides the necessary structure for scenario definitions and sensor configuration.
+    
+    \item \textbf{PedestrianSpawner} - Handles walker (pedestrian) spawning with configurable parameters:
+    \begin{itemize}
+        \item Distance from vehicle
+        \item Height offset
+        \item Horizontal offset (left/right of vehicle)
+        \item Walking speed
+    \end{itemize}
+\end{itemize}
+
+\subsection{Controllers}
+
+The \texttt{VehicleController} class manages low-level vehicle control:
+
+\begin{itemize}
+    \item \texttt{apply\_control(throttle, steer, brake)} - Directly applies control commands
+    \item \texttt{apply\_throttle(target\_speed\_mps)} - PID-like controller to maintain target speed
+\end{itemize}
+
+\subsection{Sensors}
+
+The \textbf{SensorManager} class manages sensor lifecycles:
+
+\begin{itemize}
+    \item \texttt{add\_sensor(sensor)} - Attaches a sensor to the vehicle
+    \item \texttt{destroy()} - Safely removes all sensors from the simulation
+\end{itemize}
+
+Key sensors include:
+\begin{itemize}
+    \item \texttt{RGB camera} - Visual object detection
+    \item \texttt{Depth camera} - Depth estimation for 3D localization
+\end{itemize}
+
+\subsection{Utils}
+
+The utils module provides reusable utilities:
+
+\begin{itemize}
+    \item \textbf{CollisionModule} - \texttt{check\_collision\_risk()} evaluates collision risk based on predicted trajectories using TTC and lateral position analysis.
+    
+    \item \textbf{Detector} - YOLOv8-based object detection wrapper with tracking support for persistent object IDs.
+    
+    \item \textbf{KalmanFilter} - \texttt{TrajectoryKalmanFilter} implements a 4-state (X, Z, Vx, Vz) Kalman filter for pedestrian tracking and velocity estimation.
+    
+    \item \textbf{Visualizer} - Pygame-based real-time visualization showing:
+    \begin{itemize}
+        \item YOLO detection bounding boxes (green)
+        \item Kalman prediction bounding boxes (orange)
+        \item Trajectory path lines
+        \item Prediction dots
+    \end{itemize}
+    
+    \item \textbf{CARLA Utils} - Helper functions for:
+    \begin{itemize}
+        \item Vehicle/pedestrian spawning
+        \item Camera/LiDAR/Radar sensor setup
+        \item Image conversions (BGR to RGB)
+        \item Lidar data conversion
+        \item Safe actor destruction
+    \end{itemize}
+    
+    \item \textbf{Logger} - Structured logging with configurable log levels and output destinations.
+\end{itemize}
+
+\subsection{Scenarios}
+
+The scenarios module defines driving scenarios with validation:
+
+\begin{itemize}
+    \item \texttt{MovingScenario} dataclass with parameters:
+    \begin{itemize}
+        \item Scenario name and description
+        \item Pedestrian distance from vehicle
+        \item Pedestrian height
+        \item Horizontal offset (positive = right, negative = left)
+        \item Walker speed
+        \item Ego-vehicle target speed
+        \item Prediction future frames (for trajectory visualization)
+    \end{itemize}
+    \item \texttt{load\_scenarios()} - Validates and loads scenarios from config
+    \item \texttt{get\_scenario()} - Retrieves a scenario by name or default
+\end{itemize}
+
+\subsection{Simulation Flow}
+
+The main simulation loop follows this sequence:
+
+\begin{enumerate}
+    \item Engine setup: CARLA connection, vehicle/spawn point setup, sensor initialization
+    \item Simulated time advancement (world.tick())
+    \item Sensor data acquisition (RGB and depth images)
+    \item Depth processing and normalization
+    \item Ego-vehicle velocity calculation
+    \item Object detection using YOLOv8
+    \item Kalman filter updates for each tracked object
+    \item Collision risk analysis using TTC
+    \item Control decision (brake if collision imminent)
+    \item Speed control (target speed or braking)
+    \item Visualization update
+    \item Loop continues until manual stop or engine error
+    \item Cleanup: sensor destruction, actor removal, window close
+\end{enumerate}
+
+\begin{figure}[h]
+    \centering
+    \begin{center}
+    \begin{tikzpicture}[>=latex]
+        \node (init) [draw, fill=blue!10] {Initialize};
+        \node (setup) [draw, fill=blue!10, right=2cm] {Setup (CARLA, Sensors)};
+        \node (loop) [draw, fill=yellow!10, right=2cm of setup] {Simulation Loop};
+        \node (detect) [draw, fill=green!10, right=2cm of loop] {Detect (YOLOv8)};
+        \node (track) [draw, fill=green!10, right=2cm of detect] {Track (Kalman)};
+        \node (assess) [draw, fill=red!10, right=2cm of track] {Assess Risk (TTC)};
+        \node (control) [draw, fill=orange!10, right=2cm of assess] {Control};
+        \node (viz) [draw, fill=blue!10, right=2cm of control] {Visualize};
+        \node (cleanup) [draw, fill=gray!10, below=2cm of setup] {Cleanup};
+        
+        \draw[->, thick, red] (init) -> (setup);
+        \draw[->, thick, red] (setup) -> (loop);
+        
+        \draw[->, thick, blue, dashed] (loop) -> (detect);
+        \draw[->, thick, blue, dashed] (detect) -> (track);
+        \draw[->, thick, blue, dashed] (track) -> (assess);
+        \draw[->, thick, blue, dashed] (assess) -> (control);
+        \draw[->, thick, blue, dashed] (control) -> (viz);
+        \draw[->, thick, blue, dashed] (viz) -> (loop);
+        
+        \draw[->, thick, gray] (loop) |- (cleanup);
+    \end{tikzpicture}
+    \caption{Simulation flow diagram}
+    \end{center}
+\end{figure}
+
+\subsection{Configuration Structure}
+
+The system is configured via YAML:
+
+\begin{verbatim}
+carla:
+  host: "localhost"
+  port: 2000
+  timeout: 10.0
+  map: "Town03"
+
+vehicle:
+  blueprint: "vehicle.tesla.model3"
+  spawn_point: null  # random spawn or waypoint
+
+simulation:
+  fps: 20
+  default_scenario: "scenario_name"
+
+scenarios:
+  scenario_name:
+    walker_distance_from_vehicle: 35.0
+    walker_height: 1.0
+    walker_horizontal_offset: 0.0  # 0 = directly in front
+    walker_speed: 1.0
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+
+sensors:
+  camera:
+    enabled: true
+    width: 800
+    height: 600
+    fov: 60
+\end{verbatim}

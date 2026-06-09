@@ -1,18 +1,254 @@
-\subsection{Functional requirements}
-Function requirements collect what the system does.
-The project description defines the following requirements:
+\section{Requirements}
+
+This section defines the requirements for the SmartVehicular system. Requirements are categorized into \textbf{functional} (what the system must do) and \textbf{non-functional} (how the system must behave).
+
+\subsection{Functional Requirements}
+
+Functional requirements describe the specific functionality that the system must provide:
+
+\subsubsection{FR-1: Pedestrian / Cyclist Detection}
+
 \begin{itemize}
-    \item[\bf{1}] Pedestrian / Cyclist detection 
-    \item[\bf{2}] Detection via front camera, depth sensor, LiDAR and sensor fusion
-    \item[\bf{3}] Trajectory and collision estimation using Kalman filters
-    \item[\bf{4}] Warning module based on time to collision
-\end{itemize} 
-\subsection{Non-functional requirements}
-Non-functional requirements collect quality features the system has.
-We defined our implementation to be:
+    \item The system shall detect pedestrians and bicyclists in the simulation environment.
+    \item Detection shall be performed using a deep learning-based object detector (YOLOv8).
+    \item The system shall output bounding boxes with class labels and confidence scores.
+    \item Detection shall support tracking with persistent object IDs across frames.
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
 \begin{itemize}
-    \item [\bf{5}] Easy to configure scenarios and subsequent testing
-    \item [\bf{6}] Robust in its pedestrian detection
-    \item [\bf{7}] Persistent pedestrian detection when it is partially or fully occluded 
-    \item [\bf{8}] Responsive in its visual output and decision-making
+    \item Detection accuracy > 70\% (average precision at IoU=0.5)
+    \item Detection latency < 100ms per frame
+    \item Track ID consistency across frames
+\end{itemize}
+
+\subsubsection{FR-2: Multi-Sensor Fusion}
+
+\begin{itemize}
+    \item The system shall utilize multiple sensor modalities: RGB camera, depth camera, and optionally LiDAR.
+    \item The system shall fuse data from all available sensors to improve detection and tracking robustness.
+    \item The system shall handle sensor failures gracefully (e.g., camera blocked, depth unavailable).
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Depth data used for 3D position estimation
+    \item RGB data used for object classification
+    \item Graceful degradation when sensors are unavailable
+\end{itemize}
+
+\subsubsection{FR-3: Trajectory and Collision Estimation}
+
+\begin{itemize}
+    \item The system shall estimate pedestrian trajectories using a Kalman filter.
+    \item The system shall estimate pedestrian velocities relative to the ego vehicle.
+    \item The system shall calculate Time-to-Collision (TTC) for objects in the vehicle's path.
+    \item The system shall distinguish between:
+    \begin{itemize}
+        \item Safe crossing (pedestrian not in trajectory)
+        \item Warning phase (pedestrian entering trajectory, >1.5s until impact)
+        \item Critical (pedestrian will hit vehicle, <5s until impact)
+    \end{itemize}
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Trajectory prediction error < 1 meter (at 5-second horizon)
+    \item TTC accuracy < 0.5 seconds
+    \item Correct classification of safe/warning/critical states
+\end{itemize}
+
+\subsubsection{FR-4: Collision Warning}
+
+\begin{itemize}
+    \item The system shall trigger collision warnings based on TTC thresholds.
+    \item Warning levels:
+    \begin{itemize}
+        \item Level 1 (Warning): TTC between 3-5 seconds
+        \item Level 2 (Critical): TTC < 3 seconds
+        \item Level 3 (Collision): TTC < 1 second or impact imminent
+    \end{itemize}
+    \item The system shall provide appropriate feedback to the user/autonomous system.
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Warning triggered with adequate time for human reaction (>2 seconds)
+    \item False positive rate < 5\%
+    \item False negative rate < 10\%
+\end{itemize}
+
+\subsection{Non-Functional Requirements}
+
+Non-functional requirements describe the quality attributes and constraints of the system:
+
+\subsubsection{NFR-1: Configurability}
+
+\begin{itemize}
+    \item The system shall support configurable simulation scenarios via a YAML configuration file.
+    \item Users shall be able to modify:
+    \begin{itemize}
+        \item Simulation parameters (FPS, map, vehicle properties)
+        \item Sensor parameters (resolution, FOV, sensor types)
+        \item Scenario definitions (pedestrian behavior, vehicle speed)
+    \end{itemize}
+    \item The system shall validate configuration files and provide clear error messages for invalid configurations.
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Easy-to-use command-line interface for scenario selection
+    \item Configuration validation with helpful error messages
+    \item Support for at least 3 distinct scenarios
+\end{itemize}
+
+\subsubsection{NFR-2: Robustness in Detection}
+
+\begin{itemize}
+    \item The system shall maintain robust detection under varying conditions:
+    \begin{itemize}
+        \item Different lighting conditions
+        \item Partial occlusions
+        \item Occluded objects reappearing
+    \end{itemize}
+    \item The system shall handle occlusions by maintaining track IDs.
+    \item The system shall recover tracking when objects reappear.
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Track continuity maintained through occlusions
+    \item Object re-detection when reappearing
+    \item Graceful handling of detection failures
+\end{itemize}
+
+\subsubsection{NFR-3: Responsiveness}
+
+\begin{itemize}
+    \item The system shall provide real-time visualization of:
+    \begin{itemize}
+        \item Detections (bounding boxes with labels)
+        \item Predictions (future bounding boxes)
+        \item Trajectories (path lines)
+    \end{itemize}
+    \item The system shall update visualization at the configured frame rate.
+    \item The system shall respond to user inputs (pause, stop, close window).
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Visualization FPS matches simulation FPS (configurable, default 20-60 FPS)
+    \item Low latency between detection and visualization (< 100ms)
+    \item Immediate response to user commands
+\end{itemize}
+
+\subsubsection{NFR-4: Performance}
+
+\begin{itemize}
+    \item The system shall meet the following performance targets on reference hardware:
+    \begin{itemize}
+        \item Total simulation FPS: 20-30 FPS
+        \item YOLOv8 inference FPS: 40-60 FPS (on GPU)
+        \item Memory usage: < 4 GB
+        \item CPU usage: < 50\% (when not running inference)
+    \end{itemize}
+    \item The system shall be GPU-accelerated for object detection.
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Benchmarking on specified hardware
+    \item Performance scaling with number of objects tracked
+    \item Efficient memory management (no memory leaks)
+\end{itemize}
+
+\subsubsection{NFR-5: Cross-Platform Compatibility}
+
+\begin{itemize}
+    \item The system shall run on:
+    \begin{itemize}
+        \item Windows
+        \item Linux (Ubuntu 20.04+)
+        \item macOS (with GPU support)
+    \end{itemize}
+    \item The system shall be compatible with CARLA simulation on these platforms.
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item CI/CD pipelines for all supported platforms
+    \item Docker support for platform-agnostic deployment
+    \item Python version compatibility (Python 3.7+)
+\end{itemize}
+
+\subsubsection{NFR-6: Code Quality}
+
+\begin{itemize}
+    \item The code shall follow best practices:
+    \begin{itemize}
+        \item Python typing (type hints for functions and variables)
+        \item Modular design (separation of concerns)
+        \item Error handling and logging
+    \end{itemize}
+    \item Unit tests for core functionality (test coverage > 70\%)
+    \item Code documentation (docstrings, README)
+\end{itemize}
+
+\textbf{Acceptance Criteria:}
+\begin{itemize}
+    \item Static analysis (flake8, mypy) passes without errors
+    \item Test coverage >= 70\% for all modules
+    \function
+    \item Docstrings for all public functions and classes
+\end{itemize}
+
+\subsection{Technical Constraints}
+
+\begin{itemize}
+    \item CARLA version: 0.9.13+ (minimum supported version)
+    \item Python version: 3.7+ (due to CARLA dependencies)
+    \item Operating System: Windows 10/11, Ubuntu 18.04+, macOS 10.15+
+    \item Hardware:
+    \begin{itemize}
+        \item CPU: 4+ cores (i5 or equivalent)
+        \item GPU: NVIDIA GTX 1060+ (for YOLOv8 on GPU)
+        \item RAM: 16 GB minimum, 32 GB recommended
+    \end{itemize}
+    \item Network: 1 Gbps for CARLA client-server communication (if using TCP-IP mode)
+\end{itemize}
+
+\subsection{Assumptions}
+
+\begin{itemize}
+    \item Users have access to a CARLA simulation environment (local or remote)
+    \item Users have an NVIDIA GPU for YOLOv8 acceleration (optional, model runs on CPU without GPU)
+    \item CARLA simulation uses the default urban map (Town03)
+    \item Pedestrian behavior follows CARLA walker actor behavior (simplified)
+    \item Depth camera provides accurate depth measurements (no calibration errors)
+\end{itemize}
+
+\subsection{Dependencies}
+
+\begin{verbatim}
+carla                  # CARLA simulation client (0.9.13+)
+carla-actors           # CARLA actors for simulation (0.9.13+)
+opencv-python          # OpenCV for computer vision
+numpy                  # Numerical computing
+pygame                 # Visualization
+ultralytics[export]    # YOLOv8 with export support
+PyYAML                 # YAML configuration
+typing                 # Type hinting
+typer                  # CLI framework
+cv2                   # OpenCV Python bindings
+\end{verbatim}
+
+\subsection{Deliverables}
+
+\begin{itemize}
+    \item \textbf{Source Code}: Complete implementation in Python with modular structure
+    \item \textbf{Documentation}: This technical report with system architecture and design details
+    \item \textbf{README}: Quick start guide with installation and usage instructions
+    \item \textbf{Configuration Files}: Example YAML configurations for different scenarios
+    \item \textbf{Tests}: Unit tests for all modules with pytest
+    \item \textbf{Visualization}: Real-time visualization of detections and predictions
 \end{itemize}

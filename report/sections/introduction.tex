@@ -1,9 +1,107 @@
-Our project is an implementation of the proposed ``Project 18: Pedestrian Crossing Warning with Camera-Depth Fusion''.\\
-It aims to provide a warning of possible collisions, estimations of trajectories of crossing pedestrians in a driving scenario by utilizing car sensors;
-it solves this goal in 3 main phases:
+\section{Introduction}
+
+\subsection{Project Context}
+
+Our project is an implementation of the proposed ``Project 18: Pedestrian Crossing Warning with Camera-Depth Fusion''. This project falls under the domain of \textbf{autonomous driving}, specifically focusing on the \textbf{perception} and \textbf{control} systems for safely navigating through urban environments.
+
+\subsection{Problem Statement}
+
+One of the most critical safety challenges in autonomous driving is the detection and prediction of pedestrian behavior, particularly at crosswalks and unmarked crossings. Pedestrians exhibit unpredictable behavior:
 \begin{itemize}
-    \item pedestrian/cyclist recognition 
-    \item trajectory estimation 
-    \item time to collision estimation
+    \item They may step into the road without checking for vehicles
+    \item Their movement patterns may be affected by attention (e.g., looking at a phone)
+    \item Environmental factors (weather, lighting, occlusions) can affect detection
 \end{itemize}
-A more in-depth analysis of the required objectives and project's goal will be explored in the following chapter.
+
+The goal of our project is to provide a \textbf{collision warning system} that:
+\begin{enumerate}
+    \item Detects pedestrians in the vehicle's path using camera sensors
+    \item Estimates the trajectories of these pedestrians
+    \item Predicts future positions to assess collision risk
+    \item Provides warnings to the driver (or autonomous system) before a collision occurs
+\end{enumerate}
+
+\subsection{Why Camera and Depth?}
+
+While cameras provide rich semantic information (object recognition, scene understanding), monocular cameras struggle with depth estimation. Stereo cameras (or depth cameras) solve this problem but require more computational resources.
+
+\textbf{Our approach uses a fusion of both:}
+\begin{itemize}
+    \item \textbf{RGB Camera}: YOLOv8 for object detection (identifying \textit{what})
+    \item \textbf{Depth Camera}: Depth estimation for 3D localization (identifying \textit{where})
+\end{itemize}
+
+This fusion allows us to:
+\begin{enumerate}
+    \item Detect objects (pedestrians, bicyclists) in 2D image space using YOLOv8
+    \item Use depth values at detection locations to infer 3D positions
+    \item Combine both modalities for more robust and accurate predictions
+\end{enumerate}
+
+\subsection{Project Objectives}
+
+The project aims to achieve three main objectives:
+
+\begin{enumerate}
+    \item \textbf{Pedestrian/Cyclist Recognition}: Use YOLOv8 object detection to identify and track pedestrians and bicyclists in the scene.
+    
+    \item \textbf{Trajectory Estimation}: Use a Kalman filter to track pedestrian trajectories in 3D space and estimate velocities relative to the ego vehicle.
+    
+    \item \textbf{Collision Assessment}: Implement a Time-to-Collision (TTC) based metric to determine if and when a collision will occur, with sufficient time for the autonomous system to react.
+\end{enumerate}
+
+\subsection{Expected Outcomes}
+
+By achieving these objectives, we expect the system to:
+\begin{enumerate}
+    \item Detect pedestrians entering the road with an average precision of >70\%
+    \item Maintain track IDs across frames even during temporary occlusions
+    \item Predict pedestrian trajectories with <1 meter error (in distance)
+    \item Provide collision warnings with TTC < 5 seconds (giving ~5 seconds of warning time)
+    \item Integrate seamlessly with an autonomous control system for braking
+\end{enumerate}
+
+\subsection{Scope}
+
+This project focuses on:
+\begin{itemize}
+    \item \textbf{Scenario}: Single vehicle driving in an urban environment with pedestrians
+    \item \textbf{Sensors}: Front-facing RGB and depth cameras only
+    \item \textbf{Objects}: Pedestrians (walker) and bicyclists only
+    \item \textbf{Environment}: CARLA Town03 urban map
+    \item \textbf{Control}: Simple velocity-based control (no lane keeping, no path planning)
+\end{itemize}
+
+This scope is chosen to:
+\begin{itemize}
+    \item Validate the core perception concepts (sensor fusion, tracking, collision assessment)
+    \item Focus on the specific challenge of pedestrian behavior
+    \item Avoid the complexity of full autonomous driving (path planning, lane following, etc.)
+\end{itemize}
+
+\subsection{Report Structure}
+
+This technical report is organized as follows:
+\begin{enumerate}
+    \item \textbf{Introduction}: Project context, problem statement, objectives, and scope
+    \item \textbf{Requirements}: Functional and non-functional requirements for the system
+    \item \textbf{Design}: System architecture, component descriptions, and data flow
+    \item \textbf{Technologies}: Description of the technologies and tools used
+    \item \textbf{Results and Testing}: Implementation results, test cases, and performance metrics
+    \item \textbf{Development}: Development process, deployment instructions, and contributing guide
+    \item \textbf{Conclusion}: Summary of achievements, limitations, and future work
+\end{enumerate}
+
+\subsection{Target Audience}
+
+This report is intended for:
+\begin{itemize}
+    \item Students and researchers interested in autonomous driving
+    \item Engineers working on perception systems for autonomous vehicles
+    \item Developers interested in integrating the SmartVehicular system
+    \item Anyone interested in sensor fusion, object tracking, and collision warning systems
+\end{itemize}
+
+\subsection{Organization}
+
+This report has been prepared within the context of an academic project. The implementation is available on GitHub, and we provide a detailed report on the design, implementation, and results. We hope this work contributes to the growing body of knowledge in autonomous driving perception systems.

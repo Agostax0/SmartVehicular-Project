@@ -1,1 +1,176 @@
-technologies.tex
+\section{Technologies Used}
+
+\subsection{Simulation Environment}
+
+\textbf{CARLA} (https://carla.org/) - The open-source autonomous driving simulator serves as the foundation for all experiments. CARLA provides:
+\begin{itemize}
+    \item Photorealistic urban environments
+    \item Real-time vehicle dynamics and physics
+    \item Rich sensor suite (RGB cameras, depth sensors, LiDAR, radar)
+    \item API for scene configuration, actor management, and sensor control
+    \item Synchronous simulation mode for deterministic experiments
+\end{itemize}
+
+Our implementation leverages CARLA's TCP-IP interface for external control and relies on the simulator's actor lifecycle management and sensor data streaming.
+
+\subsection{Object Detection}
+
+\textbf{YOLOv8} (https://ultralytics.com/) - The object detection backbone for pedestrian/cyclist recognition:
+\begin{itemize}
+    \item \textbf{Model variants}: YOLOv8n (nano), s (small), m (medium), l (large), x (extra-large)
+    \item \textbf{Tracking mode}: \texttt{model.track()} enables persistent object IDs across frames for tracking
+    \item \textbf{Object classes}: Configurable subset of COCO classes (person ID=0, bicycle=1, motorcycle=3)
+    \item \textbf{Output}: Bounding boxes (xyxy format), confidence scores, class IDs, track IDs
+\end{itemize}
+
+We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and accuracy in real-time scenarios. The model processes individual frames with a configurable confidence threshold.
+
+\subsection{Deep Learning Framework}
+
+\textbf{Ultralytics} - The Python SDK for YOLOv8 models:
+\begin{itemize}
+    \item Simple API for training, validation, and inference
+    \item Built-in tracking support for object persistence
+    \item Batch processing capabilities
+    \item Compatible with various model formats (PyTorch, ONNX, TensorRT)
+\end{itemize}
+
+\subsection{Computer Vision}
+
+\textbf{OpenCV} (cv2) - Used for:
+\begin{itemize}
+    \item Color image conversion
+    \item Image preprocessing
+    \item Matrix operations for Kalman filter
+    \item Image-to-matrix conversions
+\end{itemize}
+
+\subsection{Tracking Algorithm}
+
+\textbf{Kalman Filter} - A linear dynamic model for state estimation and prediction:
+\begin{itemize}
+    \item \textbf{State vector}: [X, Z, Vx, Vz] - 2D position and velocity (object-relative-to-ego frame)
+    \item \textbf{Measurement vector}: [X, Z] - 2D position (from depth image)
+    \item \textbf{Transition model}: State evolves over time with constant velocity assumption
+    \item \textbf{Control inputs}: Ego-vehicle velocities (V_ego_x, V_ego_z) for ego-motion compensation
+    
+    The filter performs predict-correct cycles for each object track:
+    \begin{enumerate}
+        \item \textbf{Predict}: Extrapolate state based on previous state and control inputs
+        \item \textbf{Correct}: Update state using new measurements and compute Kalman gain
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Collision Assessment}
+
+\textbf{Time-to-Collision (TTC)} - A standard metric for collision warning systems:
+\begin{itemize}
+    \item TTC = distance / closing_speed
+    \item Closing speed computed as relative velocity between object and ego vehicle
+    \item Positive TTC: object approaching; Negative TTC: object receding
+    
+    Our implementation uses lateral position analysis to distinguish between:
+    \begin{itemize}
+        \item Trajectory crossing (pedestrian in path but safe)
+        \item Collision imminent (pedestrian in path and close)
+        \item No risk (pedestrian moving away or far away)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Visualization}
+
+\textbf{Pygame} - For real-time rendering and visualization:
+\begin{itemize}
+    \item Windowed display with configurable size and title
+    \item Surface manipulation for drawing bounding boxes
+    \item Text rendering for labels
+    \item Line drawing for trajectory paths
+    \item Circle drawing for prediction dots
+    \item Event handling for window close
+    \item HWSURFACE | DOUBLEBUF for performance optimization
+\end{itemize}
+
+\subsection{CLI Framework}
+
+\textbf{Typer} - A fast, modern command-line interface creator:
+\begin{itemize}
+    \item Based on type hints
+    \item Automatic help message generation
+    \item Support for options, arguments, flags
+    \item Rich error messages and hints
+    \item Asynchronous support
+\end{itemize}
+
+Usage:
+\begin{verbatim}
+python src/run_simulation.py \\
+  --config path/to/config.yaml \\
+  --scenario scenario_name \\
+  --list-scenarios  # list all available scenarios
+\end{verbatim}
+
+\subsection{Configuration Management}
+
+\textbf{PyYAML} - YAML configuration parsing:
+\begin{itemize}
+    \item Nested dictionary structure
+    \item Type validation with error messages
+    \item Scenario parameter validation
+    \item Default value support with \texttt{dict.get()}
+\end{itemize}
+
+\subsection{Numerical Computing}
+
+\textbf{NumPy} - For numerical operations:
+\begin{itemize}
+    \item Array manipulation and reshaping
+    \item Mathematical operations (mean, sqrt, etc.)
+    \item Matrix operations for Kalman filter
+    \item Speed optimization over Python lists
+\end{itemize}
+
+\subsection{Logging}
+
+\textbf{logging module} - Python's built-in logging with:
+\begin{itemize}
+    \item Configurable log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    \item Timestamped messages
+    \item Logger hierarchy with parent/child relationships
+    \item Custom formatting (if needed)
+\end{itemize}
+
+\subsection{Python Version}
+
+\textbf{Python 3.7+} - Minimum version requirement for:
+\begin{itemize}
+    \item Type hints support
+    \item f-string formatting
+    \item Walrus operator (Python 3.8+, but we avoid it)
+    \item Type hints with \texttt{from __future__ import annotations} (Python < 3.9)
+\end{itemize}
+
+\subsection{Test Framework}
+
+\textbf{pytest} - For automated testing:
+\begin{itemize}
+    \item Easy test discovery
+    \item Assertion primitives
+    \item Parametrized tests
+    \item Fixtures for setup/teardown
+    \item Test reports and coverage
+\end{itemize}
+
+\subsection{Project Dependencies}
+
+\begin{verbatim}
+carla                  # CARLA simulation client
+carla-actors           # CARLA actors for simulation
+opencv-python          # OpenCV for computer vision
+numpy                  # Numerical computing
+pygame                 # Visualization
+ultralytics[export]    # YOLOv8 with export support
+PyYAML                 # YAML configuration
+typing                 # Type hinting
+typer                  # CLI framework
+pytest                 # Testing framework
+\end{verbatim}
