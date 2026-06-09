@@ -17,8 +17,8 @@ Functional requirements describe the specific functionality that the system must
 
 \textbf{Acceptance Criteria:}
 \begin{itemize}
-    \item Detection accuracy > 70\% (average precision at IoU=0.5)
-    \item Detection latency < 100ms per frame
+    \item Detection accuracy $ > $ 70\% (average precision at IoU=0.5)
+    \item Detection latency $ < $ 100ms per frame
     \item Track ID consistency across frames
 \end{itemize}
 
@@ -46,15 +46,15 @@ Functional requirements describe the specific functionality that the system must
     \item The system shall distinguish between:
     \begin{itemize}
         \item Safe crossing (pedestrian not in trajectory)
-        \item Warning phase (pedestrian entering trajectory, >1.5s until impact)
-        \item Critical (pedestrian will hit vehicle, <5s until impact)
+        \item Warning phase (pedestrian entering trajectory, $ > $ 1.5s until impact)
+        \item Critical (pedestrian will hit vehicle, $ < $ 5s until impact)
     \end{itemize}
 \end{itemize}
 
 \textbf{Acceptance Criteria:}
 \begin{itemize}
-    \item Trajectory prediction error < 1 meter (at 5-second horizon)
-    \item TTC accuracy < 0.5 seconds
+    \item Trajectory prediction error $ < $ 1 meter (at 5-second horizon)
+    \item TTC accuracy $ < $ 0.5 seconds
     \item Correct classification of safe/warning/critical states
 \end{itemize}
 
@@ -65,17 +65,17 @@ Functional requirements describe the specific functionality that the system must
     \item Warning levels:
     \begin{itemize}
         \item Level 1 (Warning): TTC between 3-5 seconds
-        \item Level 2 (Critical): TTC < 3 seconds
-        \item Level 3 (Collision): TTC < 1 second or impact imminent
+        \item Level 2 (Critical): TTC $<$ 3 seconds
+        \item Level 3 (Collision): TTC $<$ 1 second or impact imminent
     \end{itemize}
     \item The system shall provide appropriate feedback to the user/autonomous system.
 \end{itemize}
 
 \textbf{Acceptance Criteria:}
 \begin{itemize}
-    \item Warning triggered with adequate time for human reaction (>2 seconds)
-    \item False positive rate < 5\%
-    \item False negative rate < 10\%
+    \item Warning triggered with adequate time for human reaction ($>$2 seconds)
+    \item False positive rate $<$ 5\%
+    \item False negative rate $<$ 10\%
 \end{itemize}
 
 \subsection{Non-Functional Requirements}
@@ -138,7 +138,7 @@ Non-functional requirements describe the quality attributes and constraints of t
 \textbf{Acceptance Criteria:}
 \begin{itemize}
     \item Visualization FPS matches simulation FPS (configurable, default 20-60 FPS)
-    \item Low latency between detection and visualization (< 100ms)
+    \item Low latency between detection and visualization ($<$ 100ms)
     \item Immediate response to user commands
 \end{itemize}
 
@@ -149,8 +149,8 @@ Non-functional requirements describe the quality attributes and constraints of t
     \begin{itemize}
         \item Total simulation FPS: 20-30 FPS
         \item YOLOv8 inference FPS: 40-60 FPS (on GPU)
-        \item Memory usage: < 4 GB
-        \item CPU usage: < 50\% (when not running inference)
+        \item Memory usage: $<$ 4 GB
+        \item CPU usage: $<$ 50\% (when not running inference)
     \end{itemize}
     \item The system shall be GPU-accelerated for object detection.
 \end{itemize}
@@ -190,22 +190,21 @@ Non-functional requirements describe the quality attributes and constraints of t
         \item Modular design (separation of concerns)
         \item Error handling and logging
     \end{itemize}
-    \item Unit tests for core functionality (test coverage > 70\%)
+    \item Unit tests for core functionality (test coverage $ \ge $ 70\%)
     \item Code documentation (docstrings, README)
 \end{itemize}
 
 \textbf{Acceptance Criteria:}
 \begin{itemize}
     \item Static analysis (flake8, mypy) passes without errors
-    \item Test coverage >= 70\% for all modules
-    \function
+    \item Test coverage $ \ge $ 70\% for all modules
     \item Docstrings for all public functions and classes
 \end{itemize}
 
 \subsection{Technical Constraints}
 
 \begin{itemize}
-    \item CARLA version: 0.9.13+ (minimum supported version)
+    \item CARLA version: 0.9.15 (minimum supported version)
     \item Python version: 3.7+ (due to CARLA dependencies)
     \item Operating System: Windows 10/11, Ubuntu 18.04+, macOS 10.15+
     \item Hardware:
@@ -229,9 +228,8 @@ Non-functional requirements describe the quality attributes and constraints of t
 
 \subsection{Dependencies}
 
+
 \begin{verbatim}
-carla                  # CARLA simulation client (0.9.13+)
-carla-actors           # CARLA actors for simulation (0.9.13+)
 opencv-python          # OpenCV for computer vision
 numpy                  # Numerical computing
 pygame                 # Visualization
@@ -239,7 +237,12 @@ ultralytics[export]    # YOLOv8 with export support
 PyYAML                 # YAML configuration
 typing                 # Type hinting
 typer                  # CLI framework
-cv2                   # OpenCV Python bindings
+cv2                    # OpenCV Python bindings
+future                 # Python 2/3 compatibility utilities
+open3d                 # 3D data processing and visualization
+typer                  # CLI application builder based on type hints
+pytest                 # Testing framework for Python projects
+carla                  # CARLA autonomous driving simulator client
 \end{verbatim}
 
 \subsection{Deliverables}
