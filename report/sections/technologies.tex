@@ -2,7 +2,7 @@
 
 \subsection{Simulation Environment}
 
-\textbf{CARLA} (https://carla.org/) - The open-source autonomous driving simulator serves as the foundation for all experiments. CARLA provides:
+\textbf{CARLA} \href{https://carla.org/}{(https://carla.org/)} - The open-source autonomous driving simulator serves as the foundation for all experiments. CARLA provides:
 \begin{itemize}
     \item Photorealistic urban environments
     \item Real-time vehicle dynamics and physics
@@ -15,7 +15,7 @@ Our implementation leverages CARLA's TCP-IP interface for external control and r
 
 \subsection{Object Detection}
 
-\textbf{YOLOv8} (https://ultralytics.com/) - The object detection backbone for pedestrian/cyclist recognition:
+\textbf{YOLOv8} \href{https://ultralytics.com/}{(https://ultralytics.com/)} - The object detection backbone for pedestrian/cyclist recognition:
 \begin{itemize}
     \item \textbf{Model variants}: YOLOv8n (nano), s (small), m (medium), l (large), x (extra-large)
     \item \textbf{Tracking mode}: \texttt{model.track()} enables persistent object IDs across frames for tracking
@@ -52,7 +52,8 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
     \item \textbf{State vector}: [X, Z, Vx, Vz] - 2D position and velocity (object-relative-to-ego frame)
     \item \textbf{Measurement vector}: [X, Z] - 2D position (from depth image)
     \item \textbf{Transition model}: State evolves over time with constant velocity assumption
-    \item \textbf{Control inputs}: Ego-vehicle velocities (V_ego_x, V_ego_z) for ego-motion compensation
+    \item \textbf{Control inputs}: Ego-vehicle velocities ($ V_{{ego}_{x}}$,$ V_{{ego}_{z}} $) for ego-motion compensation
+    
     
     The filter performs predict-correct cycles for each object track:
     \begin{enumerate}
@@ -65,7 +66,7 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
 
 \textbf{Time-to-Collision (TTC)} - A standard metric for collision warning systems:
 \begin{itemize}
-    \item TTC = distance / closing_speed
+    \item $ TTC = distance / closing\_speed $
     \item Closing speed computed as relative velocity between object and ego vehicle
     \item Positive TTC: object approaching; Negative TTC: object receding
     
@@ -146,7 +147,9 @@ python src/run_simulation.py \\
     \item Type hints support
     \item f-string formatting
     \item Walrus operator (Python 3.8+, but we avoid it)
-    \item Type hints with \texttt{from __future__ import annotations} (Python < 3.9)
+    \item Type hints with \verb|from __future__ import annotations (Python < 3.9)|
+    
+    
 \end{itemize}
 
 \subsection{Test Framework}
@@ -163,14 +166,15 @@ python src/run_simulation.py \\
 \subsection{Project Dependencies}
 
 \begin{verbatim}
-carla                  # CARLA simulation client
-carla-actors           # CARLA actors for simulation
-opencv-python          # OpenCV for computer vision
 numpy                  # Numerical computing
 pygame                 # Visualization
 ultralytics[export]    # YOLOv8 with export support
 PyYAML                 # YAML configuration
 typing                 # Type hinting
 typer                  # CLI framework
-pytest                 # Testing framework
+cv2                    # OpenCV Python bindings
+future                 # Python 2/3 compatibility utilities
+open3d                 # 3D data processing and visualization
+pytest                 # Testing framework for Python projects
+carla                  # CARLA autonomous driving simulator client
 \end{verbatim}

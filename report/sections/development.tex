@@ -30,8 +30,8 @@ The project was developed by:
 
 \begin{verbatim}
 Operating System: Ubuntu 22.04 LTS
-Python Version: 3.11
-CARLA Version: 0.9.13
+Python Version: 3.7
+CARLA Version: 0.9.15
 \end{verbatim}
 
 \subsection{Development Process}
@@ -42,8 +42,8 @@ We used Git for version control with the following structure:
 \begin{itemize}
     \item \texttt{main} branch: Stable releases, production-ready code
     \item \texttt{develop} branch: Integration branch for ongoing development
-    \item Feature branches: \texttt{feature/\<name>} for individual features
-    \item Issue branches: \texttt{issue/\#\<number>} for bug fixes
+    \item Feature branches: \verb|feature/<name>| for individual features
+    \item Issue branches: \verb|issue/<number>| for bug fixes
 \end{itemize}
 
 \subsubsection{Workflow}
@@ -72,21 +72,21 @@ The project is organized into the following packages:
     
     \item \texttt{src/controllers/}: Vehicle control
     \begin{itemize}
-        \item \texttt{vehicle_controller.py}: Velocity-based control
+        \item \verb|vehicle_controller.py|: Velocity-based control
     \end{itemize}
     
     \item \texttt{src/sensors/}: Sensor management
     \begin{itemize}
-        \item \texttt{sensor_manager.py}: Sensor lifecycle management
+        \item \verb|sensor_manager.py|: Sensor lifecycle management
     \end{itemize}
     
     \item \texttt{src/utils/}: Utility modules
     \begin{itemize}
-        \item \texttt{collision_module.py}: Collision risk assessment
+        \item \verb|collision_module.py|: Collision risk assessment
         \item \texttt{detector.py}: YOLOv8 object detection
         \item \texttt{kalman.py}: Kalman filter for trajectory prediction
         \item \texttt{visualizer.py}: Real-time visualization
-        \item \texttt{carla_utils.py}: CARLA integration utilities
+        \item \verb|carla_utils.py|: CARLA integration utilities
         \item \texttt{logger.py}: Logging utilities
     \end{itemize}
     
@@ -95,7 +95,7 @@ The project is organized into the following packages:
         \item \texttt{moving.py}: Moving pedestrian scenarios
     \end{itemize}
     
-    \item \texttt{src/run_simulation.py}: CLI entry point
+    \item \verb|src/run_simulation.py|: CLI entry point
 \end{itemize}
 
 \subsubsection{Key Implementation Decisions}
@@ -173,9 +173,6 @@ pip install -r requirements.txt
 \end{verbatim}
 
 \textbf{Additional requirements for simulation:}
-\begin{verbatim}
-pip install git+https://github.com/carla-simulator/carla-actors.git
-\end{verbatim}
 
 \subsubsection{Running Simulations}
 
@@ -238,16 +235,6 @@ sensors:
 \subsubsection{Visualization}
 
 The visualization window appears automatically during simulation. Press \texttt{ESC} or click the X button to close.
-
-\subsubsection{Docker Deployment}
-
-We also provide a Dockerfile for containerized deployment:
-
-\begin{verbatim}
-docker build -t smartvehicular .
-docker run -p 2000:2000 smartvehicular
-\end{verbatim}
-
 \subsection{Documentation}
 
 \subsubsection{Report Generation}
@@ -268,24 +255,13 @@ evince report.pdf  # Ubuntu
 open report.pdf    # Mac
 start report.pdf   # Windows
 \end{verbatim}
-
-\subsubsection{API Documentation}
-
-\begin{verbatim}
-# Generate API docs
-mkdir docs
-cd docs
-# Copy documentation templates and API reference
-\end{verbatim}
-
 \subsection{Continuous Integration}
 
 We use GitHub Actions for automated testing and CI/CD:
 
 \begin{verbatim}
 .github/workflows/
-├── test.yml           # Run tests on push and PR
-└── deploy.yml         # Build and deploy on tag release
+    deploy.yml         # Build and deploy on tag release
 \end{verbatim}
 
 \subsubsection{Release Process}
@@ -306,7 +282,7 @@ For each release:
 To contribute to the project:
 \begin{enumerate}
     \item Fork the repository
-    \item Create a feature branch (\texttt{feature/\<your-feature>})
+    \item Create a feature branch (\verb|feature/<your-feature>|)
     \item Make your changes
     \item Write/update tests for new features
     \item Ensure tests pass: \texttt{pytest}
