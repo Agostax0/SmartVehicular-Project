@@ -2,35 +2,37 @@ This project implements a modular architecture to separate concerns and enable e
 
 \begin{figure}[h]
     \centering
-    \begin{center}
     \begin{tikzpicture}[node distance=2cm, >=latex]
       \tikzset{
         module/.style={draw, fill=blue!10, rounded corners, minimum height=1.2cm, minimum width=2.5cm, align=center, font=\bfseries},
-        submodule/.style={draw, fill=yellow!10, rounded corners, minimum height=1.2cm, minimum width=2.5cm, align=center},
+        submodule/.style={draw, rounded corners, minimum height=1.2cm, minimum width=2.5cm, align=center},
         flow/.style={->, thick},
         dep/.style={->, dashed, thick, draw=gray}
       }
-    
-      % Nodes
+
+      % Top: Core (orchestrator)
       \node[module] (core) {Core};
-      \node[module, left=2cm of core] (controllers) {Controllers};
-      \node[module, right=2cm of core] (sensors) {Sensors};
-      
-      \node[submodule, fill=green!10, below=2cm of core] (utils) {Utils};
-      \node[submodule, fill=orange!10, below=2cm of utils] (scenarios) {Scenarios};
-    
-      % Connections
+
+      % Middle row: Controllers, Scenarios, Sensors
+      \node[module, below left=2cm and 2.5cm of core] (controllers) {Controllers};
+      \node[submodule, fill=orange!10, below=2cm of core] (scenarios) {Scenarios};
+      \node[module, below right=2cm and 2.5cm of core] (sensors) {Sensors};
+
+      % Bottom: Utils (shared)
+      \node[submodule, fill=green!10, below=2cm of scenarios] (utils) {Utils};
+
+      % Core depends on everything
+      \draw[flow] (core) -- (controllers);
+      \draw[flow] (core) -- (scenarios);
+      \draw[flow] (core) -- (sensors);
       \draw[flow] (core) -- (utils);
-      \draw[flow] (controllers) |- (utils);
-      \draw[flow] (sensors) |- (utils);
-    
-      \draw[dep] (scenarios) -- (utils);
-      \draw[dep] (scenarios.west) -| (controllers.south);
-      \draw[dep] (scenarios.east) -| (core.south);
-    
+
+      % Controllers and Sensors also use Utils
+      \draw[dep] (controllers) -- (utils);
+      \draw[dep] (sensors) -- (utils);
+
     \end{tikzpicture}
     \caption{High-level system architecture}
-    \end{center}
 \end{figure}
 
 \section{Core Module}
