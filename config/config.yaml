@@ -6,13 +6,13 @@ carla:
 
 vehicle:
   blueprint: "vehicle.tesla.model3"
-  spawn_point: null  # null = random spawn
+  spawn_point: 45  # 45 is a long straight road in Town03 without side barriers
 
 simulation:
   max_steps: 1000
   fps: 20
   sync_mode: true
-  default_scenario: "non-colliding-pedestrian"
+  default_scenario: "two-pedestrians-one-collision"
 
 scenarios:
   non-colliding-pedestrian:
@@ -31,6 +31,45 @@ scenarios:
     walker_speed: 0.4
     target_speed_mps: 5.56
     prediction_future_frames: 30
+  two-pedestrians-no-collision:
+    description: "Two pedestrians cross (R-to-L and L-to-R). AEB is enabled, vehicle stops safely."
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+    walkers:
+      - walker_distance_from_vehicle: 30.0
+        walker_height: 1.0
+        walker_horizontal_offset: 4.0
+        walker_speed: 0.8
+      - walker_distance_from_vehicle: 45.0
+        walker_height: 1.0
+        walker_horizontal_offset: -4.0
+        walker_speed: 0.5
+  two-pedestrians-one-collision:
+    description: "Two pedestrians cross (R-to-L and L-to-R). AEB is disabled, vehicle collides with 1 pedestrian."
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+    walkers:
+      - walker_distance_from_vehicle: 30.0
+        walker_height: 1.0
+        walker_horizontal_offset: 4.0
+        walker_speed: 0.8
+      - walker_distance_from_vehicle: 45.0
+        walker_height: 1.0
+        walker_horizontal_offset: -4.0
+        walker_speed: 2.0
+  two-pedestrians-both-collision:
+    description: "Two pedestrians cross (R-to-L and L-to-R). AEB is disabled, vehicle collides with both pedestrians."
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+    walkers:
+      - walker_distance_from_vehicle: 30.0
+        walker_height: 1.0
+        walker_horizontal_offset: 4.0
+        walker_speed: 0.8
+      - walker_distance_from_vehicle: 45.0
+        walker_height: 1.0
+        walker_horizontal_offset: -4.0
+        walker_speed: 0.5
 
 sensors:
   camera:
