@@ -14,8 +14,9 @@ This project implements a modular architecture to separate concerns and enable e
       \node[module] (core) {Core};
 
       % Middle row: Controllers, Scenarios, Sensors
-      \node[module, below left=2cm and 2.5cm of core] (controllers) {Controllers};
       \node[submodule, fill=orange!10, below=2cm of core] (scenarios) {Scenarios};
+      \node[module, below left=2cm and 2.5cm of core] (controllers) {Controllers};
+
       \node[module, below right=2cm and 2.5cm of core] (sensors) {Sensors};
 
       % Bottom: Utils (shared)
@@ -48,7 +49,7 @@ The core module contains the fundamental logic of the simulation system:
         \item Pedestrian spawning based on scenario
         \item Main simulation loop with camera callbacks
     \end{itemize}
-    
+
     \item \textbf{PerceptionSystem} - Handles the perception pipeline:
     \begin{itemize}
         \item Depth image processing (normalization)
@@ -57,7 +58,7 @@ The core module contains the fundamental logic of the simulation system:
         \item Trajectory prediction for future frames
         \item Collision risk assessment using TTC (Time-to-Collision)
     \end{itemize}
-    
+
     \item \textbf{SimulationState} - A shared state object that passes data between the camera callbacks and the main simulation loop. Contains:
     \begin{itemize}
         \item \texttt{frame}: Current RGB image
@@ -68,9 +69,9 @@ The core module contains the fundamental logic of the simulation system:
         \item \texttt{ego\_speed}: Current ego-vehicle speed
         \item \texttt{brake\_needed}: Flag indicating if braking is required
     \end{itemize}
-    
+
     \item \textbf{ConfigLoader} - Loads YAML configuration files and provides the necessary structure for scenario definitions and sensor configuration.
-    
+
     \item \textbf{PedestrianSpawner} - Handles walker (pedestrian) spawning with configurable parameters:
     \begin{itemize}
         \item Distance from vehicle
@@ -110,11 +111,11 @@ The utils module provides reusable utilities:
 
 \begin{itemize}
     \item \textbf{CollisionModule} - \texttt{check\_collision\_risk()} evaluates collision risk based on predicted trajectories using TTC and lateral position analysis.
-    
+
     \item \textbf{Detector} - YOLOv8-based object detection wrapper with tracking support for persistent object IDs.
-    
+
     \item \textbf{KalmanFilter} - \texttt{TrajectoryKalmanFilter} implements a 4-state (X, Z, Vx, Vz) Kalman filter for pedestrian tracking and velocity estimation.
-    
+
     \item \textbf{Visualizer} - Pygame-based real-time visualization showing:
     \begin{itemize}
         \item YOLO detection bounding boxes (green)
@@ -122,7 +123,7 @@ The utils module provides reusable utilities:
         \item Trajectory path lines
         \item Prediction dots
     \end{itemize}
-    
+
     \item \textbf{CARLA Utils} - Helper functions for:
     \begin{itemize}
         \item Vehicle/pedestrian spawning
@@ -131,7 +132,7 @@ The utils module provides reusable utilities:
         \item Depth data conversion
         \item Safe actor destruction
     \end{itemize}
-    
+
     \item \textbf{Logger} - Structured logging with configurable log levels and output destinations.
 \end{itemize}
 
@@ -182,28 +183,28 @@ The main simulation loop follows this sequence:
             block/.style={draw, rounded corners, minimum height=1cm, minimum width=2.5cm, align=center, font=\small},
             arrow/.style={->, thick}
         }
-        
+
         \node[block, fill=blue!10] (init) at (0, 0) {Initialize};
         \node[block, fill=blue!10] (setup) at (4, 0) {Setup\\(CARLA, Sensors)};
         \node[block, fill=yellow!10] (loop) at (8, 0) {Simulation\\Loop};
-        
+
         \node[block, fill=green!10] (detect) at (8, -2) {Detect\\(YOLOv8)};
         \node[block, fill=green!10] (track) at (4, -2) {Track\\(Kalman)};
         \node[block, fill=red!10] (assess) at (0, -2) {Assess Risk\\(TTC)};
-        
+
         \node[block, fill=orange!10] (control) at (0, -4) {Control};
         \node[block, fill=blue!10] (viz) at (4, -4) {Visualize};
         \node[block, fill=gray!10] (cleanup) at (8, -4) {Cleanup};
-        
+
         \draw[arrow, red] (init) -- (setup);
         \draw[arrow, red] (setup) -- (loop);
-        
+
         \draw[arrow, blue, dashed] (loop) -- (detect);
         \draw[arrow, blue, dashed] (detect) -- (track);
         \draw[arrow, blue, dashed] (track) -- (assess);
         \draw[arrow, blue, dashed] (assess) -- (control);
         \draw[arrow, blue, dashed] (control) -- (viz);
-        
+
         \draw[arrow, blue, dashed] (viz.south) -- (4, -4.8) -| (9.8, 0) -- (loop.east);
         \draw[arrow, gray] (loop.north) -- (8, 0.8) -| (10.6, -4) -- (cleanup.east);
     \end{tikzpicture}
