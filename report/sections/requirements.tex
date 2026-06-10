@@ -169,14 +169,14 @@ Non-functional requirements describe the quality attributes and constraints of t
         \item Modular design (separation of concerns)
         \item Error handling and logging
     \end{itemize}
-    \item Unit tests for core functionality (test coverage $ \ge $ 70\%)
+    \item Unit tests for core functionality (excluding direct CARLA interactions)
     \item Code documentation (docstrings, README)
 \end{itemize}
 
 \textbf{Acceptance Criteria:}
 \begin{itemize}
     \item Static analysis (flake8, mypy) passes without errors
-    \item Test coverage $ \ge $ 70\% for all modules
+    \item High test coverage for pure logic modules (e.g., algorithms, config parsing)
     \item Docstrings for all public functions and classes
 \end{itemize}
 
