@@ -12,6 +12,7 @@ class WalkerParams:
     walker_height: float
     walker_horizontal_offset: float
     walker_speed: float
+    walker_type: str = "pedestrian"
 
 @dataclass(frozen=True)
 class MovingScenario:
@@ -29,6 +30,7 @@ class MovingScenario:
     walker_height: float = 0.0
     walker_horizontal_offset: float = 0.0
     walker_speed: float = 0.0
+    walker_type: str = "pedestrian"
 
 def _parse_float(raw_value: Any, field_name: str, scenario_name: str) -> float:
     """Parse and validate a numeric scenario value."""
@@ -127,6 +129,7 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
                             scenario_name,
                         ),
                         walker_speed=w_speed,
+                        walker_type=w.get("walker_type", "pedestrian"),
                     )
                 )
             if walkers:
@@ -135,8 +138,10 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
                 w_h = w0.walker_height
                 w_off = w0.walker_horizontal_offset
                 w_spd = w0.walker_speed
+                w_type = w0.walker_type
             else:
                 w_dist, w_h, w_off, w_spd = 0.0, 0.0, 0.0, 0.0
+                w_type = "pedestrian"
         else:
             required_fields = [
                 "walker_distance_from_vehicle",
@@ -171,12 +176,14 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
                 scenario_name,
             )
             w_spd = walker_speed
+            w_type = raw_scenario.get("walker_type", "pedestrian")
             walkers.append(
                 WalkerParams(
                     walker_distance_from_vehicle=w_dist,
                     walker_height=w_h,
                     walker_horizontal_offset=w_off,
                     walker_speed=w_spd,
+                    walker_type=w_type,
                 )
             )
 
@@ -213,6 +220,7 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
             walker_height=w_h,
             walker_horizontal_offset=w_off,
             walker_speed=w_spd,
+            walker_type=w_type,
         )
 
     return scenarios
