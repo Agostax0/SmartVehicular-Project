@@ -30,6 +30,7 @@ class SimulationEngine:
         self.world = None
         self.vehicle = None
         self.walker = None
+        self.walkers = []
         self.sensor_manager = None
         self.visualizer = None
         self.detector = ObjectDetector()
@@ -51,15 +52,31 @@ class SimulationEngine:
             title=f"SmartVehicular Detection - {self.scenario.name}"
         )
         
+        spawn_idx = self.config["vehicle"].get("spawn_point")
+        if spawn_idx is None:
+            spawn_idx = 0
+
         self.vehicle, spawn_transform = spawn_vehicle(
             self.world,
-            spawn_index=0,
+            spawn_index=spawn_idx,
             vehicle_filter=self.config["vehicle"]["blueprint"],
             autopilot=False,
         )
         logger.info("Vehicle spawned: %s at %s", self.vehicle.type_id, spawn_transform.location)
         
-        self.walker = spawn_pedestrian(self.world, spawn_transform, self.scenario)
+        self.walkers = []
+        if getattr(self.scenario, "walkers", None) is not None:
+            for w_params in self.scenario.walkers:
+                w_actor = spawn_pedestrian(self.world, spawn_transform, w_params)
+                if w_actor is not None:
+                    self.walkers.append(w_actor)
+            # Maintain self.walker referencing the first spawned walker if any
+            if self.walkers:
+                self.walker = self.walkers[0]
+        else:
+            self.walker = spawn_pedestrian(self.world, spawn_transform, self.scenario)
+            if self.walker is not None:
+                self.walkers.append(self.walker)
         
         self.sensor_manager = SensorManager(self.world, self.vehicle)
         
@@ -147,4 +164,7 @@ class SimulationEngine:
             self.visualizer.close()
         if self.sensor_manager is not None:
             self.sensor_manager.destroy()
-        safe_destroy([self.walker, self.vehicle])
+        actors_to_destroy = list(self.walkers) if hasattr(self, "walkers") else []
+        if self.vehicle is not None:
+            actors_to_destroy.append(self.vehicle)
+        safe_destroy(actors_to_destroy)
