@@ -12,7 +12,7 @@ simulation:
   max_steps: 1000
   fps: 20
   sync_mode: true
-  default_scenario: "two-pedestrians-both-collision"
+  default_scenario: "mixed-pedestrian-cyclist"
 
 scenarios:
   non-colliding-pedestrian:
@@ -88,6 +88,22 @@ scenarios:
         walker_height: 1.0
         walker_horizontal_offset: -4.0
         walker_speed: 0.5
+
+  mixed-pedestrian-cyclist:
+    description: "A fast cyclist crossing from the right (clears path) and a slow pedestrian crossing from the left (collision threat)."
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+    walkers:
+      - walker_distance_from_vehicle: 40.0
+        walker_height: 1.0
+        walker_horizontal_offset: 4.0
+        walker_speed: 2.0
+        walker_type: "cyclist"
+      - walker_distance_from_vehicle: 30.0
+        walker_height: 1.0
+        walker_horizontal_offset: -4.0
+        walker_speed: 0.8
+        walker_type: "pedestrian"
 
 sensors:
   camera:
