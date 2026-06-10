@@ -15,6 +15,14 @@ class VehicleController:
             brake=brake,
         )
         self.vehicle.apply_control(control)
+        
+        # Turn on/off brake lights programmatically
+        current_lights = self.vehicle.get_light_state()
+        if brake > 0.0:
+            current_lights |= carla.VehicleLightState.Brake
+        else:
+            current_lights &= ~carla.VehicleLightState.Brake
+        self.vehicle.set_light_state(carla.VehicleLightState(current_lights))
 
     def apply_throttle(self, target_speed_mps):
         current_vel = self.vehicle.get_velocity()
