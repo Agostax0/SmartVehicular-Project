@@ -73,6 +73,16 @@ Scenario definitions are configured under the `scenarios` section in `config/con
 
 ## Running tests
 
+To run the unit tests:
+
 ```bash
 pytest tests/
 ```
+
+To run the tests with code coverage and generate an HTML report:
+
+```bash
+pytest --cov=src --cov-report=html tests/
+```
+
+This will create an `htmlcov/` directory. Open `htmlcov/index.html` in your web browser to view the detailed line-by-line coverage report.

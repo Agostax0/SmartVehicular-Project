@@ -41,5 +41,9 @@ yolov8n.pt
 *.gz
 *.toc
 *.out
-
 !report/assets/**
+
+# Coverage files
+.coverage
+htmlcov/
+.pytest_cache/

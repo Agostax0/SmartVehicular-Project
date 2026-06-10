@@ -7,6 +7,7 @@ Pillow
 pyyaml
 typer
 pytest
+pytest-cov
 ultralytics==8.0.145
 carla==0.9.15
 lapx==0.9.4
