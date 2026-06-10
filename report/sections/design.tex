@@ -22,11 +22,10 @@ This project implements a modular architecture to separate concerns and enable e
       % Bottom: Utils (shared)
       \node[submodule, fill=green!10, below=2cm of scenarios] (utils) {Utils};
 
-      % Core depends on everything
+      % Core depends on Controllers, Scenarios, Sensors
       \draw[flow] (core) -- (controllers);
       \draw[flow] (core) -- (scenarios);
       \draw[flow] (core) -- (sensors);
-      \draw[flow] (core) -- (utils);
 
       % Controllers and Sensors also use Utils
       \draw[dep] (controllers) -- (utils);
