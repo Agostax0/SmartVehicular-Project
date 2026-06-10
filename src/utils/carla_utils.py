@@ -13,7 +13,6 @@ from typing import Iterable, Sequence
 import carla
 import numpy as np
 
-
 def move_spectator_to(transform, spectator, distance=7.0, z=3.0, pitch=-15.0):
     """Move the spectator camera behind a given transform.
 

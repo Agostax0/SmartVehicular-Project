@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+import carla
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -13,6 +15,27 @@ class WalkerParams:
     walker_horizontal_offset: float
     walker_speed: float
     walker_type: str = "pedestrian"
+
+@dataclass(frozen=True)
+class WeatherParams:
+    """Weather parameters for the map to take."""
+    cloudiness: float = 0.0
+    precipitation: float = 0.0
+    puddles: float = 0.0
+    fog_density: float = 0.0
+    fog_distance: float = 0.0
+    road_wetness: float = 0.0
+
+    def toCarlaWeather(self) -> carla.WeatherParameters:
+        return carla.WeatherParameters(
+            cloudiness=self.cloudiness,
+            precipitation=self.precipitation,
+            precipitation_deposits=self.puddles,
+            fog_density=self.fog_density,
+            fog_distance=self.fog_distance,
+            wetness=self.road_wetness,
+        )
+    
 
 @dataclass(frozen=True)
 class MovingScenario:
@@ -31,6 +54,8 @@ class MovingScenario:
     walker_horizontal_offset: float = 0.0
     walker_speed: float = 0.0
     walker_type: str = "pedestrian"
+
+    weather_effects: WeatherParams = WeatherParams()
 
 def _parse_float(raw_value: Any, field_name: str, scenario_name: str) -> float:
     """Parse and validate a numeric scenario value."""
@@ -209,6 +234,31 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
             scenario_name,
         )
 
+
+        weather_parameters = WeatherParams()
+        if raw_scenario.get("weather_effects") is not None:   
+            def clipIfPresent(attr_name: str):     
+                clip = lambda val: np.clip(val, a_min=0, a_max=100)
+                if "weather_effects" in raw_scenario and attr_name in raw_scenario["weather_effects"]:
+                    return clip(
+                        _parse_float(
+                            raw_scenario["weather_effects"][attr_name],
+                              attr_name,
+                              scenario_name
+                            )
+                        )
+                else:
+                    return 0.0
+
+            weather_parameters = WeatherParams(
+                cloudiness = clipIfPresent("cloudiness"),
+                precipitation= clipIfPresent("precipitation"),
+                puddles= clipIfPresent("puddles"),
+                fog_density= clipIfPresent("fog_density"),
+                fog_distance= clipIfPresent("fog_distance"),
+                road_wetness= clipIfPresent("road_wetness"),
+            )
+
         scenarios[scenario_name] = MovingScenario(
             name=scenario_name,
             description=description,
@@ -221,6 +271,7 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
             walker_horizontal_offset=w_off,
             walker_speed=w_spd,
             walker_type=w_type,
+            weather_effects=weather_parameters
         )
 
     return scenarios

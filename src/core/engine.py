@@ -38,8 +38,9 @@ class SimulationEngine:
         self.state = SimulationState()
         
     def setup(self):
-        self.world = self.client.get_world()
-        
+        self.world = self.client.load_world(self.config["carla"]["map"])
+        self.world.set_weather(self.scenario.weather_effects.toCarlaWeather())
+
         settings = self.world.get_settings()
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = 1.0 / self.config["simulation"].get("fps", 20)
