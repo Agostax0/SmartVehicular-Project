@@ -1,4 +1,4 @@
-This section defines the requirements for the SmartVehicular system. Requirements are categorized into \textbf{functional} (what the system must do) and \textbf{non-functional} (how the system must behave).
+This section defines the requirements for the smart vehicular system. Requirements are categorized into \textbf{functional} (what the system must do) and \textbf{non-functional} (how the system must behave).
 
 \section{Functional Requirements}
 
@@ -62,9 +62,8 @@ Functional requirements describe the specific functionality that the system must
     \item The system shall trigger collision warnings based on TTC thresholds.
     \item Warning levels:
     \begin{itemize}
-        \item Level 1 (Warning): TTC between 3-5 seconds
-        \item Level 2 (Critical): TTC $<$ 3 seconds
-        \item Level 3 (Collision): TTC $<$ 1 second or impact imminent
+        \item Level 0 (Safe): TTC greater than 15 seconds
+        \item Level 1 (Warning): TTC lower than 5 seconds
     \end{itemize}
     \item The system shall provide appropriate feedback to the user/autonomous system.
 \end{itemize}
@@ -160,26 +159,8 @@ Non-functional requirements describe the quality attributes and constraints of t
     \item Efficient memory management (no memory leaks)
 \end{itemize}
 
-\subsection{NFR-5: Cross-Platform Compatibility}
 
-\begin{itemize}
-    \item The system shall run on:
-    \begin{itemize}
-        \item Windows
-        \item Linux (Ubuntu 20.04+)
-        \item macOS (with GPU support)
-    \end{itemize}
-    \item The system shall be compatible with CARLA simulation on these platforms.
-\end{itemize}
-
-\textbf{Acceptance Criteria:}
-\begin{itemize}
-    \item CI/CD pipelines for all supported platforms
-    \item Docker support for platform-agnostic deployment
-    \item Python version compatibility (Python 3.7+)
-\end{itemize}
-
-\subsection{NFR-6: Code Quality}
+\subsection{NFR-5: Code Quality}
 
 \begin{itemize}
     \item The code shall follow best practices:
@@ -249,5 +230,4 @@ carla                  # CARLA autonomous driving simulator client
     \item \textbf{README}: Quick start guide with installation and usage instructions
     \item \textbf{Configuration Files}: Example YAML configurations for different scenarios
     \item \textbf{Tests}: Unit tests for all modules with pytest
-    \item \textbf{Visualization}: Real-time visualization of detections and predictions
 \end{itemize}

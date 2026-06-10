@@ -12,8 +12,7 @@ This project successfully demonstrates the integration of multiple sensor modali
     \item \textbf{Collision Assessment}: Implemented a TTC (Time-to-Collision) based collision warning system that can distinguish between:
     \begin{itemize}
         \item Safe crossing (pedestrian not in trajectory)
-        \item Warning phase (pedestrian entering trajectory)
-        \item Critical collision (pedestrian will hit the vehicle)
+        \item Warning phase (pedestrian entering trajectory, possible collision)
     \end{itemize}
     
     \item \textbf{Autonomous Control}: Created a velocity-based control system that can brake automatically when collision is imminent.
@@ -44,7 +43,7 @@ During development, we encountered several challenges:
     
     \item \textbf{Depth Calibration}: Achieving accurate depth measurements required careful sensor calibration. Small misalignments can lead to significant positioning errors.
     
-    \item \textbf{YOLOv8 Latency}: The YOLOv8 nano model achieved good speed (~40-60 FPS on our test GPU) but still limited the overall simulation to ~20 FPS due to other processing.
+    \item \textbf{YOLOv8 Latency}: The YOLOv8 nano model achieved good speed ($\sim~$40-60 FPS on our test GPU) but still limited the overall simulation to $\sim~20$ FPS due to other processing.
     
     \item \textbf{Pedestrian Model}: CARLA's \texttt{walker} actor doesn't have the same mesh as real vehicles, which can cause minor visual inconsistencies but doesn't affect functionality.
     
@@ -65,8 +64,7 @@ The system successfully:
     \item Correctly classified collision scenarios:
     \begin{itemize}
         \item No collision (pedestrian far from path)
-        \item Warning (pedestrian in trajectory, >1.5s until impact)
-        \item Critical (pedestrian will hit vehicle in <5s)
+        \item Warning (pedestrian in trajectory, $<$5s until impact)
     \end{itemize}
 \end{enumerate}
 
@@ -78,9 +76,9 @@ The system successfully:
         \hline
         Component & Metric & Value & Notes \\
         \hline
-        YOLOv8 inference & FPS & 40-60 & On RTX 3090, yolov8n.pt \\
+        YOLOv8 inference & FPS & 45 & On AMD 7800 XT, yolov8n.pt \\
         \hline
-        Kalman update & Time per frame & ~1-2ms & Negligible \\
+        Kalman update & Time per frame & $\sim$1-2ms & Negligible \\
         \hline
         TTC calculation & Time per call & $<$100µs & Extremely fast \\
         \hline
@@ -172,5 +170,3 @@ The system architecture is modular and extensible, making it suitable for:
     \item Use as a teaching tool for autonomous driving concepts
     \item Benchmarking of different perception algorithms
 \end{itemize}
-
-We believe this implementation provides a solid foundation for future work in the field of autonomous driving perception and control, and we hope our approach can inspire and benefit the autonomous driving community.

@@ -217,7 +217,7 @@ scenarios:
   your_scenario_name:
     walker_distance_from_vehicle: 35.0
     walker_height: 1.0
-    walker_horizontal_offset: 0.0
+    walker_horizontal_offset: -2.5
     walker_speed: 1.0
     target_speed_mps: 5.56
     prediction_future_frames: 30
@@ -232,27 +232,8 @@ sensors:
 
 \subsection{Visualization}
 
-The visualization window appears automatically during simulation. Press \texttt{ESC} or click the X button to close.
-\section{Documentation}
+The visualization window appears automatically during simulation.\\ Press \texttt{ESC} or click the X button to close.
 
-\subsection{Report Generation}
-
-The project includes a LaTeX report that can be compiled:
-
-\begin{verbatim}
-# Install LaTeX
-# Ubuntu: sudo apt install texlive texlive-latex-extra
-# Mac: brew install mactex
-# Windows: Download from https://www.tug.org/texlive/
-
-# Generate PDF
-latexmk -pdf report.tex
-
-# Open generated report
-evince report.pdf  # Ubuntu
-open report.pdf    # Mac
-start report.pdf   # Windows
-\end{verbatim}
 \section{Continuous Integration}
 
 We use GitHub Actions for automated testing and CI/CD:
@@ -260,6 +241,7 @@ We use GitHub Actions for automated testing and CI/CD:
 \begin{verbatim}
 .github/workflows/
     deploy.yml         # Build and deploy on tag release
+    test.yml           # Tests the project
 \end{verbatim}
 
 \subsection{Release Process}
@@ -274,20 +256,3 @@ For each release:
     \item Release via GitHub Releases UI
     \item Update report via report generation
 \end{enumerate}
-
-\section{Contributing}
-
-To contribute to the project:
-\begin{enumerate}
-    \item Fork the repository
-    \item Create a feature branch (\verb|feature/<your-feature>|)
-    \item Make your changes
-    \item Write/update tests for new features
-    \item Ensure tests pass: \texttt{pytest}
-    \item Submit pull request to \texttt{develop}
-    \item Update documentation if needed
-\end{enumerate}
-
-\section{Known Issues and Future Work}
-
-See the \textbf{Known Limitations} and \textbf{Future Work} sections in the Results chapter for details on current limitations and planned improvements.
