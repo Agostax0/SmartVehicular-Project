@@ -62,19 +62,7 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
 
 \section{Collision Assessment}
 
-\textbf{Time-to-Collision (TTC)} - A standard metric for collision warning systems:
-\begin{itemize}
-    \item $ TTC = distance / closing\_speed $
-    \item Closing speed computed as relative velocity between object and ego vehicle
-    \item Positive TTC: object approaching; Negative TTC: object receding
-    
-    Our implementation uses lateral position analysis to distinguish between:
-    \begin{itemize}
-        \item Trajectory crossing (pedestrian in path but safe)
-        \item Collision imminent (pedestrian in path and close)
-        \item No risk (pedestrian moving away or far away)
-    \end{itemize}
-\end{itemize}
+\textbf{Time-to-Collision (TTC)} - A standard metric for collision warning systems that computes the time until a potential impact based on the closing speed between the ego vehicle and detected objects. The system uses lateral position analysis to classify situations as safe, warning, or critical. A detailed mathematical formulation is provided in the Testing and Results chapter.
 
 \section{Visualization}
 

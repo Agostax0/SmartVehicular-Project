@@ -14,27 +14,7 @@ The project was implemented following an incremental development strategy with t
 
 \section{Unit Tests}
 
-We developed unit tests to verify the correctness of key modules:
-
-\subsection{Collision Module Tests}
-
-The \texttt{check\_collision\_risk()} function was tested with four distinct cases:
-
-\begin{enumerate}
-    \item \textbf{Immediate Collision}: Pedestrian crossing path, closing speed = 10 m/s, TTC = 1.5s (correctly flagged as critical)
-    
-    \item \textbf{Safe Crossing}: Pedestrian far from path (X = 3.0m), no collision risk despite low TTC = 1.1s
-    
-    \item \textbf{Warning Phase}: Pedestrian trajectory crossing path with moderate TTC (1.5s $<$ TTC $<$ 3.0s), triggers "warning" state
-    
-    \item \textbf{False Negative}: Pedestrian moving away faster than vehicle, no collision risk despite close proximity
-\end{enumerate}
-
-All test cases passed, validating the collision risk assessment logic.
-
-\subsection{Utility Module Tests}
-
-Basic testing of the \texttt{get\_logger()} utility function to ensure proper logger instantiation and configuration.
+The project includes a comprehensive test suite of 98 unit tests covering collision assessment, Kalman filtering, scenario validation, perception, configuration loading, state management, and sensor lifecycle. A detailed breakdown of test files and coverage is provided in the Deployment chapter.
 
 \section{Functional Analysis}
 

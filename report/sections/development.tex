@@ -56,45 +56,7 @@ Our development followed an agile approach with:
 
 \subsection{Code Organization}
 
-The project is organized into the following packages:
-
-\begin{itemize}
-    \item \texttt{src/core/}: Core simulation logic
-    \begin{itemize}
-        \item \texttt{engine.py}: Main simulation engine
-        \item \texttt{perception.py}: Perception pipeline (detection, tracking, risk assessment)
-        \item \texttt{pedestrian.py}: Pedestrian spawning
-        \item \texttt{state.py}: Shared simulation state
-        \item \texttt{config.py}: Configuration loading
-    \end{itemize}
-    
-    \item \texttt{src/controllers/}: Vehicle control
-    \begin{itemize}
-        \item \verb|vehicle_controller.py|: Velocity-based control
-    \end{itemize}
-    
-    \item \texttt{src/sensors/}: Sensor management
-    \begin{itemize}
-        \item \verb|sensor_manager.py|: Sensor lifecycle management
-    \end{itemize}
-    
-    \item \texttt{src/utils/}: Utility modules
-    \begin{itemize}
-        \item \verb|collision_module.py|: Collision risk assessment
-        \item \texttt{detector.py}: YOLOv8 object detection
-        \item \texttt{kalman.py}: Kalman filter for trajectory prediction
-        \item \texttt{visualizer.py}: Real-time visualization
-        \item \verb|carla_utils.py|: CARLA integration utilities
-        \item \texttt{logger.py}: Logging utilities
-    \end{itemize}
-    
-    \item \texttt{src/scenarios/}: Scenario definitions
-    \begin{itemize}
-        \item \texttt{moving.py}: Moving pedestrian scenarios
-    \end{itemize}
-    
-    \item \verb|src/run_simulation.py|: CLI entry point
-\end{itemize}
+The project is organized into packages under \texttt{src/}: \texttt{core/} (simulation engine, perception, state), \texttt{controllers/} (vehicle control), \texttt{sensors/} (sensor lifecycle), \texttt{utils/} (collision, detection, Kalman, visualization), and \texttt{scenarios/} (scenario definitions). A detailed description of each module is provided in the Design chapter.
 
 \subsection{Key Implementation Decisions}
 
@@ -119,19 +81,28 @@ The project is organized into the following packages:
 Tests are organized in the \texttt{tests/} directory:
 
 \begin{itemize}
-    \item \texttt{test\_collision.py}: Tests for collision risk module
-    \item \texttt{test\_utils.py}: Tests for utility modules
-    \item \texttt{test\_perception.py}: Tests for perception module (to be added)
-    \item \texttt{test\_detectors.py}: Tests for detector module (to be added)
+    \item \texttt{test\_collision.py}: Core collision risk scenarios (4 tests)
+    \item \texttt{test\_collision\_edge\_cases.py}: Boundary conditions for collision logic (18 tests)
+    \item \texttt{test\_kalman.py}: Kalman filter initialization, convergence, and ego-motion compensation (11 tests)
+    \item \texttt{test\_scenarios.py}: Scenario loading, validation, and parsing (26 tests)
+    \item \texttt{test\_perception.py}: Perception pipeline with mocked detections (8 tests)
+    \item \texttt{test\_state.py}: SimulationState defaults and mutability (12 tests)
+    \item \texttt{test\_config.py}: YAML configuration loading (6 tests)
+    \item \texttt{test\_sensor\_manager.py}: Sensor lifecycle management (8 tests)
+    \item \texttt{test\_utils.py}: Logger utility (1 test)
 \end{itemize}
 
 \subsection{Test Coverage}
 
+The test suite contains 98 tests covering all pure logic modules. Modules that directly interact with the CARLA simulator (e.g., \texttt{engine.py}, \texttt{pedestrian.py}, \texttt{carla\_utils.py}) are not unit-tested as they require a running simulator instance.
+
 \begin{itemize}
-    \item Collision module: 100\% coverage with 4 test cases
-    \item Logger module: 100\% coverage
-    \item Perception module: Partial coverage (depth processing, object analysis)
-    \item Detector module: No tests yet
+    \item Collision module: full coverage (22 test cases including edge cases)
+    \item Kalman filter: full coverage (initialization, convergence, noise smoothing)
+    \item Scenario loading and validation: full coverage (30 tests)
+    \item Perception system: covered via mocked detections and depth images
+    \item Configuration and state: full coverage
+    \item Sensor manager: full coverage via mocked CARLA actors
 \end{itemize}
 
 \subsection{Test Execution}
@@ -196,39 +167,7 @@ python src/run_simulation.py --config config/config.yaml
 
 \subsection{Configuration}
 
-Create a custom \texttt{config.yaml} with your desired parameters:
-
-\begin{verbatim}
-carla:
-  host: "localhost"
-  port: 2000
-  timeout: 10.0
-  map: "Town03"
-
-vehicle:
-  blueprint: "vehicle.tesla.model3"
-  spawn_point: null
-
-simulation:
-  fps: 20
-  default_scenario: "your_scenario_name"
-
-scenarios:
-  your_scenario_name:
-    walker_distance_from_vehicle: 35.0
-    walker_height: 1.0
-    walker_horizontal_offset: -2.5
-    walker_speed: 1.0
-    target_speed_mps: 5.56
-    prediction_future_frames: 30
-
-sensors:
-  camera:
-    enabled: true
-    width: 800
-    height: 600
-    fov: 60
-\end{verbatim}
+The system is configured via a YAML file (\texttt{config/config.yaml}). The full configuration structure, including all available parameters for CARLA, sensors, and scenarios, is described in the Design chapter.
 
 \subsection{Visualization}
 
