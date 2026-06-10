@@ -6,13 +6,13 @@ carla:
 
 vehicle:
   blueprint: "vehicle.tesla.model3"
-  spawn_point: 45  # 45 is a long straight road in Town03 without side barriers
+  spawn_point: 45
 
 simulation:
   max_steps: 1000
   fps: 20
   sync_mode: true
-  default_scenario: "two-pedestrians-one-collision"
+  default_scenario: "two-pedestrians-both-collision"
 
 scenarios:
   non-colliding-pedestrian:
@@ -31,21 +31,39 @@ scenarios:
     walker_speed: 0.4
     target_speed_mps: 5.56
     prediction_future_frames: 30
+  non-colliding-cyclist:
+    description: "Cyclist crosses with enough lateral offset to avoid collision."
+    walker_distance_from_vehicle: 40.0
+    walker_height: 1.0
+    walker_horizontal_offset: 4.0
+    walker_speed: 10.0
+    walker_type: "cyclist"
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+  colliding-cyclist:
+    description: "Cyclist crosses the direct path of the ego vehicle."
+    walker_distance_from_vehicle: 40.0
+    walker_height: 1.0
+    walker_horizontal_offset: 4.0
+    walker_speed: 1.0
+    walker_type: "cyclist"
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
   two-pedestrians-no-collision:
-    description: "Two pedestrians cross (R-to-L and L-to-R). AEB is enabled, vehicle stops safely."
+    description: "Two pedestrians cross. No collision"
     target_speed_mps: 5.56
     prediction_future_frames: 30
     walkers:
       - walker_distance_from_vehicle: 30.0
         walker_height: 1.0
         walker_horizontal_offset: 4.0
-        walker_speed: 0.8
+        walker_speed: 2.0
       - walker_distance_from_vehicle: 45.0
         walker_height: 1.0
         walker_horizontal_offset: -4.0
-        walker_speed: 0.5
+        walker_speed: 2.0
   two-pedestrians-one-collision:
-    description: "Two pedestrians cross (R-to-L and L-to-R). AEB is disabled, vehicle collides with 1 pedestrian."
+    description: "Two pedestrians cross, vehicle collides with 1 pedestrian."
     target_speed_mps: 5.56
     prediction_future_frames: 30
     walkers:
@@ -58,7 +76,7 @@ scenarios:
         walker_horizontal_offset: -4.0
         walker_speed: 2.0
   two-pedestrians-both-collision:
-    description: "Two pedestrians cross (R-to-L and L-to-R). AEB is disabled, vehicle collides with both pedestrians."
+    description: "Two pedestrians cross, vehicle collides with both pedestrians."
     target_speed_mps: 5.56
     prediction_future_frames: 30
     walkers:
