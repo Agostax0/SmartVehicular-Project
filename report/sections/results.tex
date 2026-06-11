@@ -73,33 +73,16 @@ For each detected object:
 
 \subsection{Kalman Filter Performance}
 
-The 4-state Kalman filter performs predict-correct cycles at simulation frequency (50ms intervals):
+The 4-state Kalman filter executes predict-correct cycles at the simulation frequency (50ms intervals). The mathematical formulation, matrices, and state vectors are detailed in the Tracking Algorithm section.
 
-\textbf{State Prediction}:
-\begin{equation}
-    \hat{x}_{k|k-1} = F \cdot \hat{x}_{k-1|k-1} + B \cdot u_k
-\end{equation}
-
-\textbf{State Update}:
-\begin{equation}
-    \hat{x}_{k|k} = \hat{x}_{k|k-1} + K_k \cdot (z_k - H \cdot \hat{x}_{k|k-1})
-\end{equation}
-
-Where:
+In terms of performance, the filter successfully:
 \begin{itemize}
-    \item $F$ - Transition matrix (identity + $dt \cdot I$ for velocity)
-    \item $H$ - Measurement matrix (selects position components)
-    \item $K$ - Kalman gain (computed from covariance matrices)
-    \item $u$ - Control input (ego-vehicle velocity compensation)
+    \item Filters high-frequency noise from raw camera depth observations.
+    \item Smooths the estimated trajectory of the pedestrian.
+    \item Estimates the lateral and longitudinal velocities ($V_{x}, V_{z}$) implicitly from the position history.
 \end{itemize}
 
-\textbf{Velocity Estimation}:\\
-The Kalman filter implicitly estimates velocities as part of the state. The relative velocity between pedestrian and ego vehicle is calculated as:
-\begin{equation}
-    v_{relative} = v_{pedestrian} - v_{ego}
-\end{equation}
-
-This enables accurate TTC calculation and future trajectory prediction.
+By compensating for ego-motion using the control inputs, the velocity estimations represent the relative velocities of the pedestrian accurately. This allows for stable relative velocity calculations which are critical for the subsequent Time-to-Collision (TTC) estimation.
 
 \subsection{Collision Risk Assessment}
 

@@ -43,22 +43,8 @@ We use the nano variant (\texttt{yolov8n.pt}) for a balance between speed and ac
     \item Image-to-matrix conversions
 \end{itemize}
 
-\section{Tracking Algorithm}
+\input{sections/kalman}
 
-\textbf{Kalman Filter} - A linear dynamic model for state estimation and prediction:
-\begin{itemize}
-    \item \textbf{State vector}: [X, Z, Vx, Vz] - 2D position and velocity (object-relative-to-ego frame)
-    \item \textbf{Measurement vector}: [X, Z] - 2D position (from depth image)
-    \item \textbf{Transition model}: State evolves over time with constant velocity assumption
-    \item \textbf{Control inputs}: Ego-vehicle velocities ($ V_{{ego}_{x}}$,$ V_{{ego}_{z}} $) for ego-motion compensation
-    
-    
-    The filter performs predict-correct cycles for each object track:
-    \begin{enumerate}
-        \item \textbf{Predict}: Extrapolate state based on previous state and control inputs
-        \item \textbf{Correct}: Update state using new measurements and compute Kalman gain
-    \end{enumerate}
-\end{itemize}
 
 \section{Collision Assessment}
 

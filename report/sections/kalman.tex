@@ -1,0 +1,155 @@
+\section{Tracking Algorithm: Trajectory Kalman Filter}
+
+\subsection*{Motivation}
+
+The perception pipeline detects pedestrians frame by frame using a YOLOv8 object detector combined with a depth camera array. Each detection provides a raw $(X, Z)$ position measurement that is inherently noisy: bounding box centroids jitter between frames due to imperfect detection, and depth estimates carry metric uncertainty. Furthermore, the ego-vehicle is itself moving, which shifts the apparent position of the pedestrian even when the pedestrian is standing still. Taken together, these two factors --- sensor noise and ego-motion --- make raw detections unreliable for downstream tasks such as time-to-collision estimation or trajectory prediction.
+
+A Kalman filter addresses both problems simultaneously. It maintains an internal state estimate that is updated at every frame by fusing the noisy measurement with a physics-based motion model. The motion model predicts where the pedestrian \emph{should} be given their estimated velocity, while the measurement corrects the prediction toward the observed position. The balance between the two is governed automatically by the filter based on the relative uncertainty of the model and the sensor. The ego-vehicle's velocity is injected as a known control input, so its contribution to the apparent displacement of the pedestrian is subtracted before the state is updated.
+
+\subsection*{Reference Frame}
+
+All quantities are expressed in the \textbf{Ego Frame}: a 2D Cartesian coordinate system centred on the ego-vehicle, where the $X$-axis points laterally (positive to the right) and the $Z$-axis points forward (positive away from the vehicle, i.e.\ in the direction of travel). A pedestrian directly ahead at 10\,m has coordinates $(X, Z) = (0, 10)$; one standing 3\,m to the left at the same depth has $(X, Z) = (-3, 10)$. The frame moves with the vehicle, so the ego-vehicle's own velocity must be compensated to recover the pedestrian's absolute motion.
+
+To predict and track pedestrian trajectories in the presence of vehicle ego-motion, the system implements a custom 2D Kalman filter using the \texttt{cv2.KalmanFilter} class provided by OpenCV (\texttt{cv2.KalmanFilter(4, 2, 2)}: 4 state variables, 2 measurements, 2 control inputs). This filter allows the vehicle to maintain persistent estimates of the pedestrian's relative position and absolute velocity, compensating for the movement of the ego-vehicle.
+
+\subsection{State, Measurement, and Control Vectors}
+
+The dynamic state of a tracked pedestrian is represented in the relative coordinate frame of the vehicle (Ego Frame). The filter utilizes three main vectors:
+
+\begin{itemize}
+    \item \textbf{State Vector} ($x_k \in \mathbb{R}^4$): Represents the pedestrian's 2D position ($X, Z$) and 2D velocity ($V_x, V_z$):
+    \begin{equation}
+        x_k = \begin{bmatrix} X_k \\ Z_k \\ V_{x,k} \\ V_{z,k} \end{bmatrix}
+    \end{equation}
+    where $X_k$ is the lateral offset, $Z_k$ is the longitudinal depth, $V_{x,k}$ is the lateral velocity, and $V_{z,k}$ is the longitudinal velocity.
+    
+    \item \textbf{Measurement Vector} ($z_k \in \mathbb{R}^2$): Contains the noisy 2D position coordinates extracted by the perception pipeline (YOLOv8 bounding box centroid combined with the depth camera array):
+    \begin{equation}
+        z_k = \begin{bmatrix} X_{meas, k} \\ Z_{meas, k} \end{bmatrix}
+    \end{equation}
+    
+    \item \textbf{Control Vector} ($u_k \in \mathbb{R}^2$): Contains the velocities of the ego-vehicle, which are treated as control inputs to compensate for the ego-motion:
+    \begin{equation}
+        u_k = \begin{bmatrix} V_{ego\_x, k} \\ V_{ego\_z, k} \end{bmatrix}
+    \end{equation}
+\end{itemize}
+
+\subsection{System Matrices}
+
+The transition, measurement, and control dynamics of the filter are governed by the following matrices:
+
+\begin{itemize}
+    \item \textbf{State Transition Matrix} ($F \in \mathbb{R}^{4 \times 4}$): Models a constant velocity motion model over a time step $dt$:
+    \begin{equation}
+        F = \begin{bmatrix} 
+            1 & 0 & dt & 0 \\ 
+            0 & 1 & 0 & dt \\ 
+            0 & 0 & 1 & 0 \\ 
+            0 & 0 & 0 & 1 
+        \end{bmatrix}
+    \end{equation}
+    
+    \item \textbf{Control Matrix} ($B \in \mathbb{R}^{4 \times 2}$): Integrates the ego-vehicle's velocity to subtract the ego-motion from the pedestrian's relative position:
+    \begin{equation}
+        B = \begin{bmatrix} 
+            -dt & 0 \\ 
+            0 & -dt \\ 
+            0 & 0 \\ 
+            0 & 0 
+        \end{bmatrix}
+    \end{equation}
+    Since the ego-motion only directly affects the relative position and not the pedestrian's actual velocity in the absolute coordinate frame, the bottom rows of $B$ are zero.
+    
+    \item \textbf{Measurement Matrix} ($H \in \mathbb{R}^{2 \times 4}$): Maps the 4D state vector to the 2D measurement space by selecting the position components:
+    \begin{equation}
+        H = \begin{bmatrix} 
+            1 & 0 & 0 & 0 \\ 
+            0 & 1 & 0 & 0 
+        \end{bmatrix}
+    \end{equation}
+    
+    \item \textbf{Process Noise Covariance Matrix} ($Q \in \mathbb{R}^{4 \times 4}$): Models the uncertainty in the constant-velocity assumption (e.g., changes in pedestrian walking direction or speed):
+    \begin{equation}
+        Q = \begin{bmatrix} 
+            10^{-2} & 0 & 0 & 0 \\ 
+            0 & 10^{-2} & 0 & 0 \\ 
+            0 & 0 & 5 \cdot 10^{-2} & 0 \\ 
+            0 & 0 & 0 & 5 \cdot 10^{-2} 
+        \end{bmatrix}
+    \end{equation}
+    The diagonal entries encode how much the constant-velocity model is trusted. Position components ($10^{-2}$) are assigned lower uncertainty than velocity components ($5 \cdot 10^{-2}$), reflecting the assumption that a pedestrian's position changes smoothly but their speed and direction can vary more abruptly between frames. A higher value in $Q$ causes the filter to rely less on the motion model and react faster to new measurements; a lower value produces a smoother but less reactive estimate.
+    
+    \item \textbf{Measurement Noise Covariance Matrix} ($R \in \mathbb{R}^{2 \times 2}$): Accounts for the noise in the visual detection and depth estimation:
+    \begin{equation}
+        R = \begin{bmatrix} 
+            10^{-1} & 0 \\ 
+            0 & 10^{-1} 
+        \end{bmatrix}
+    \end{equation}
+    The value $10^{-1}$ represents the assumed variance of the raw position measurements produced by the YOLOv8 + depth camera pipeline. Since $R > Q_{pos}$ (i.e.\ $10^{-1} > 10^{-2}$), the filter treats the sensor as noisier than the motion model, and therefore weights the model prediction more heavily than the raw measurement at each step. Increasing $R$ further would produce a smoother trajectory but with more lag; decreasing it would make the estimate track the raw detections more closely at the cost of higher jitter.
+    
+    \item \textbf{Error Covariance Matrix} ($P_k \in \mathbb{R}^{4 \times 4}$): Represents the uncertainty of the current state estimate, initialized at $P_0$ with high variance:
+    \begin{equation}
+        P_0 = \begin{bmatrix} 
+            10 & 0 & 0 & 0 \\ 
+            0 & 10 & 0 & 0 \\ 
+            0 & 0 & 10 & 0 \\ 
+            0 & 0 & 0 & 10 
+        \end{bmatrix}
+    \end{equation}
+\end{itemize}
+
+\subsection{Data Flow Overview}
+
+At each simulation tick the filter receives three inputs: the raw pedestrian position $(X_{meas}, Z_{meas})$ from the perception pipeline, and the ego-vehicle velocities $(V_{ego\_x}, V_{ego\_z})$ from the vehicle's odometry or motion estimation module. It produces four outputs: the filtered pedestrian position $(\hat{X}, \hat{Z})$ and the estimated pedestrian velocity $(\hat{V}_x, \hat{V}_z)$ in the absolute frame. Figure~\ref{fig:kalman_flow} summarises this data flow.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=1.6cm, auto,
+    block/.style={rectangle, draw, text centered, rounded corners, minimum height=2em, minimum width=7em},
+    input/.style={rectangle, draw=gray, dashed, text centered, minimum height=2em, minimum width=7em},
+    arrow/.style={->, >=stealth, thick}]
+    \node [input] (perc) {Perception\\(YOLO + Depth)};
+    \node [input, right=2.8cm of perc] (odom) {Odometry\\$(V_{ego\_x}, V_{ego\_z})$};
+    \node [block, below=1.2cm of perc, xshift=2.1cm] (kf) {Kalman Filter\\(predict + correct)};
+    \node [input, below=1.2cm of kf] (out) {Output\\$(\hat{X}, \hat{Z}, \hat{V}_x, \hat{V}_z)$};
+    \draw [arrow] (perc) -- node[left, font=\small] {$(X_{meas}, Z_{meas})$} (kf);
+    \draw [arrow] (odom) -- node[right, font=\small] {control $u_k$} (kf);
+    \draw [arrow] (kf) -- (out);
+\end{tikzpicture}
+\caption{Data flow of the Kalman filter at each simulation tick. The perception pipeline and the odometry feed the filter simultaneously; the filter outputs a smoothed, ego-motion-corrected state estimate.}
+\label{fig:kalman_flow}
+\end{figure}
+
+\subsection{Kalman Filter Recursion Steps}
+
+The tracking cycle runs at each simulation tick (with interval $dt$) and consists of two consecutive steps: Prediction and Correction.
+
+\subsubsection{1. Prediction Step (Predict)}
+In this step, the filter projects the state and error covariance forward in time using the transition model and the ego-vehicle's velocity:
+\begin{align}
+    \hat{x}_{k|k-1} &= F \hat{x}_{k-1|k-1} + B u_k \\
+    P_{k|k-1} &= F P_{k-1|k-1} F^T + Q
+\end{align}
+Here, $\hat{x}_{k|k-1}$ is the a priori state estimate, representing the predicted position and velocity of the pedestrian at time $k$ given information up to time $k-1$. $P_{k|k-1}$ is the a priori estimate error covariance.
+
+\subsubsection{2. Correction Step (Correct)}
+Once a new measurement $z_k$ is obtained from the cameras, the filter refines the a priori prediction:
+\begin{align}
+    K_k &= P_{k|k-1} H^T (H P_{k|k-1} H^T + R)^{-1} \\
+    \hat{x}_{k|k} &= \hat{x}_{k|k-1} + K_k (z_k - H \hat{x}_{k|k-1}) \\
+    P_{k|k} &= (I - K_k H) P_{k|k-1}
+\end{align}
+where $K_k \in \mathbb{R}^{4 \times 2}$ is the Kalman Gain, which balances the confidence between the prediction model and the sensor measurements. $\hat{x}_{k|k}$ is the a posteriori state estimate, whose components are: the filtered relative position of the pedestrian ($X_{k|k}$, $Z_{k|k}$) and the estimated absolute velocity of the pedestrian ($V_{x,k|k}$, $V_{z,k|k}$). Note that these velocity components represent the pedestrian's own motion in the environment, not the ego-vehicle's velocity. $P_{k|k}$ is the updated error covariance.
+
+\subsection{State Initialization}
+
+Upon the first detection of a pedestrian, the filter state is initialized with the measured coordinates:
+\begin{equation}
+    \hat{x}_{0|0} = \begin{bmatrix} X_{meas, 0} \\ Z_{meas, 0} \\ 0 \\ 0 \end{bmatrix}
+\end{equation}
+The initial velocity is assumed to be zero until subsequent frames allow the filter to converge and estimate the pedestrian's motion relative to the environment.
+
+In the OpenCV implementation, both \texttt{statePost} ($\hat{x}_{0|0}$) and \texttt{statePre} ($\hat{x}_{0|-1}$) are explicitly initialized to the same value. This is necessary because OpenCV's \texttt{predict()} reads from \texttt{statePost} of the previous step; without initializing \texttt{statePre}, the first prediction cycle would start from an undefined zero state rather than the observed position.
+
+Similarly, the error covariance is initialized via \texttt{errorCovPost} (i.e.\ $P_{0|0}$) rather than \texttt{errorCovPre}, since OpenCV propagates $P$ forward starting from the post-correction value. The high initial variance ($P_0 = 10 \cdot I_4$) reflects the large uncertainty on the state before the filter has had time to converge.
