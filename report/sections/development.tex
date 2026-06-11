@@ -14,16 +14,6 @@ The project was developed by:
 \end{itemize}
 
 \section{Development Environment}
-
-\subsection{Hardware}
-
-\begin{itemize}
-    \item CPU: Intel Core i9-13900KS or equivalent
-    \item GPU: NVIDIA RTX 3090 or equivalent (for YOLOv8 inference)
-    \item RAM: 64 GB
-    \item Storage: NVMe SSD
-\end{itemize}
-
 \subsection{Software}
 
 \begin{verbatim}
@@ -62,15 +52,15 @@ The project is organized into packages under \texttt{src/}: \texttt{core/} (simu
 
 \begin{enumerate}
     \item \textbf{CARLA Integration}: Used CARLA's TCP-IP interface for the simulation environment, allowing external control and sensor data access.
-    
+
     \item \textbf{YOLOv8 for Detection}: Chose YOLOv8 over other detection frameworks due to its real-time performance and ease of integration with PyTorch.
-    
+
     \item \textbf{Kalman Filter for Tracking}: Implemented a custom 2D Kalman filter for pedestrian tracking instead of using external tracking libraries, for better control and understanding of the algorithm.
-    
+
     \item \textbf{TTC for Collision}: Used Time-to-Collision as the collision metric, which is a standard metric in the autonomous driving community.
-    
+
     \item \textbf{Pygame for Visualization}: Selected Pygame for real-time visualization due to its simplicity and cross-platform compatibility.
-    
+
     \item \textbf{YAML Configuration}: Used YAML for configuration due to its human-readability and ease of editing.
 \end{enumerate}
 

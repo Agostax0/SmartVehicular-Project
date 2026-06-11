@@ -10,7 +10,8 @@ A Kalman filter addresses both problems simultaneously. It maintains an internal
 
 All quantities are expressed in the \textbf{Ego Frame}: a 2D Cartesian coordinate system centred on the ego-vehicle, where the $X$-axis points laterally (positive to the right) and the $Z$-axis points forward (positive away from the vehicle, i.e.\ in the direction of travel). A pedestrian directly ahead at 10\,m has coordinates $(X, Z) = (0, 10)$; one standing 3\,m to the left at the same depth has $(X, Z) = (-3, 10)$. The frame moves with the vehicle, so the ego-vehicle's own velocity must be compensated to recover the pedestrian's absolute motion.
 
-To predict and track pedestrian trajectories in the presence of vehicle ego-motion, the system implements a custom 2D Kalman filter using the \texttt{cv2.KalmanFilter} class provided by OpenCV (\texttt{cv2.KalmanFilter(4, 2, 2)}: 4 state variables, 2 measurements, 2 control inputs). This filter allows the vehicle to maintain persistent estimates of the pedestrian's relative position and absolute velocity, compensating for the movement of the ego-vehicle.
+To predict and track pedestrian trajectories in the presence of vehicle ego-motion, the system implements a custom 2D Kalman filter using the  \\
+\texttt{cv2.KalmanFilter} class provided by OpenCV (\texttt{cv2.KalmanFilter(4, 2, 2)}: 4 state variables, 2 measurements, 2 control inputs). This filter allows the vehicle to maintain persistent estimates of the pedestrian's relative position and absolute velocity, compensating for the movement of the ego-vehicle.
 
 \subsection{State, Measurement, and Control Vectors}
 
@@ -22,12 +23,12 @@ The dynamic state of a tracked pedestrian is represented in the relative coordin
         x_k = \begin{bmatrix} X_k \\ Z_k \\ V_{x,k} \\ V_{z,k} \end{bmatrix}
     \end{equation}
     where $X_k$ is the lateral offset, $Z_k$ is the longitudinal depth, $V_{x,k}$ is the lateral velocity, and $V_{z,k}$ is the longitudinal velocity.
-    
+
     \item \textbf{Measurement Vector} ($z_k \in \mathbb{R}^2$): Contains the noisy 2D position coordinates extracted by the perception pipeline (YOLOv8 bounding box centroid combined with the depth camera array):
     \begin{equation}
         z_k = \begin{bmatrix} X_{meas, k} \\ Z_{meas, k} \end{bmatrix}
     \end{equation}
-    
+
     \item \textbf{Control Vector} ($u_k \in \mathbb{R}^2$): Contains the velocities of the ego-vehicle, which are treated as control inputs to compensate for the ego-motion:
     \begin{equation}
         u_k = \begin{bmatrix} V_{ego\_x, k} \\ V_{ego\_z, k} \end{bmatrix}
@@ -41,60 +42,60 @@ The transition, measurement, and control dynamics of the filter are governed by 
 \begin{itemize}
     \item \textbf{State Transition Matrix} ($F \in \mathbb{R}^{4 \times 4}$): Models a constant velocity motion model over a time step $dt$:
     \begin{equation}
-        F = \begin{bmatrix} 
-            1 & 0 & dt & 0 \\ 
-            0 & 1 & 0 & dt \\ 
-            0 & 0 & 1 & 0 \\ 
-            0 & 0 & 0 & 1 
+        F = \begin{bmatrix}
+            1 & 0 & dt & 0 \\
+            0 & 1 & 0 & dt \\
+            0 & 0 & 1 & 0 \\
+            0 & 0 & 0 & 1
         \end{bmatrix}
     \end{equation}
-    
+
     \item \textbf{Control Matrix} ($B \in \mathbb{R}^{4 \times 2}$): Integrates the ego-vehicle's velocity to subtract the ego-motion from the pedestrian's relative position:
     \begin{equation}
-        B = \begin{bmatrix} 
-            -dt & 0 \\ 
-            0 & -dt \\ 
-            0 & 0 \\ 
-            0 & 0 
+        B = \begin{bmatrix}
+            -dt & 0 \\
+            0 & -dt \\
+            0 & 0 \\
+            0 & 0
         \end{bmatrix}
     \end{equation}
     Since the ego-motion only directly affects the relative position and not the pedestrian's actual velocity in the absolute coordinate frame, the bottom rows of $B$ are zero.
-    
+
     \item \textbf{Measurement Matrix} ($H \in \mathbb{R}^{2 \times 4}$): Maps the 4D state vector to the 2D measurement space by selecting the position components:
     \begin{equation}
-        H = \begin{bmatrix} 
-            1 & 0 & 0 & 0 \\ 
-            0 & 1 & 0 & 0 
+        H = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0
         \end{bmatrix}
     \end{equation}
-    
+
     \item \textbf{Process Noise Covariance Matrix} ($Q \in \mathbb{R}^{4 \times 4}$): Models the uncertainty in the constant-velocity assumption (e.g., changes in pedestrian walking direction or speed):
     \begin{equation}
-        Q = \begin{bmatrix} 
-            10^{-2} & 0 & 0 & 0 \\ 
-            0 & 10^{-2} & 0 & 0 \\ 
-            0 & 0 & 5 \cdot 10^{-2} & 0 \\ 
-            0 & 0 & 0 & 5 \cdot 10^{-2} 
+        Q = \begin{bmatrix}
+            10^{-2} & 0 & 0 & 0 \\
+            0 & 10^{-2} & 0 & 0 \\
+            0 & 0 & 5 \cdot 10^{-2} & 0 \\
+            0 & 0 & 0 & 5 \cdot 10^{-2}
         \end{bmatrix}
     \end{equation}
     The diagonal entries encode how much the constant-velocity model is trusted. Position components ($10^{-2}$) are assigned lower uncertainty than velocity components ($5 \cdot 10^{-2}$), reflecting the assumption that a pedestrian's position changes smoothly but their speed and direction can vary more abruptly between frames. A higher value in $Q$ causes the filter to rely less on the motion model and react faster to new measurements; a lower value produces a smoother but less reactive estimate.
-    
+
     \item \textbf{Measurement Noise Covariance Matrix} ($R \in \mathbb{R}^{2 \times 2}$): Accounts for the noise in the visual detection and depth estimation:
     \begin{equation}
-        R = \begin{bmatrix} 
-            10^{-1} & 0 \\ 
-            0 & 10^{-1} 
+        R = \begin{bmatrix}
+            10^{-1} & 0 \\
+            0 & 10^{-1}
         \end{bmatrix}
     \end{equation}
     The value $10^{-1}$ represents the assumed variance of the raw position measurements produced by the YOLOv8 + depth camera pipeline. Since $R > Q_{pos}$ (i.e.\ $10^{-1} > 10^{-2}$), the filter treats the sensor as noisier than the motion model, and therefore weights the model prediction more heavily than the raw measurement at each step. Increasing $R$ further would produce a smoother trajectory but with more lag; decreasing it would make the estimate track the raw detections more closely at the cost of higher jitter.
-    
+
     \item \textbf{Error Covariance Matrix} ($P_k \in \mathbb{R}^{4 \times 4}$): Represents the uncertainty of the current state estimate, initialized at $P_0$ with high variance:
     \begin{equation}
-        P_0 = \begin{bmatrix} 
-            10 & 0 & 0 & 0 \\ 
-            0 & 10 & 0 & 0 \\ 
-            0 & 0 & 10 & 0 \\ 
-            0 & 0 & 0 & 10 
+        P_0 = \begin{bmatrix}
+            10 & 0 & 0 & 0 \\
+            0 & 10 & 0 & 0 \\
+            0 & 0 & 10 & 0 \\
+            0 & 0 & 0 & 10
         \end{bmatrix}
     \end{equation}
 \end{itemize}
