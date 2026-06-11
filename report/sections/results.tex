@@ -84,6 +84,19 @@ In terms of performance, the filter successfully:
 
 By compensating for ego-motion using the control inputs, the velocity estimations represent the relative velocities of the pedestrian accurately. This allows for stable relative velocity calculations which are critical for the subsequent Time-to-Collision (TTC) estimation.
 
+\subsection{Model Quality Evaluation}
+
+To evaluate the performance of the perception and tracking pipeline, we extracted the true 3D spatial parameters from the CARLA simulator's odometry and compared them against the estimates produced by the Kalman filter. Figure~\ref{fig:eval_results} illustrates the system's performance over a 150-frame sequence in the \texttt{colliding-pedestrian} scenario.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{assets/evaluation_results.png}
+    \caption{Model evaluation: True vs. Estimated tracking performance and TTC.}
+    \label{fig:eval_results}
+\end{figure}
+
+The depth estimation closely tracks the ground truth, effectively filtering out sensor noise. The lateral position estimation demonstrates accurate tracking of the pedestrian's movement into the ego-vehicle's path. Furthermore, the Time-to-Collision (TTC) metric rapidly converges as the pedestrian enters the vehicle's trajectory, successfully triggering the Automatic Emergency Braking (AEB) well in advance of the potential impact.
+
 \subsection{Collision Risk Assessment}
 
 The collision assessment module uses a geometric approach based on predicted trajectories:
