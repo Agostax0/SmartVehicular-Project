@@ -30,6 +30,10 @@ class Visualizer:
             image (numpy.ndarray): RGB image array.
             results: Results object from YOLOv8 detector.
             kalman_predictions (dict): Dictionary of predicted boxes.
+
+        Returns:
+            tuple: (running, keys) where *running* is False when the window
+            should close and *keys* is the result of ``pygame.key.get_pressed()``.
         """
         surface = pygame.surfarray.make_surface(image.swapaxes(0, 1))
         
@@ -89,11 +93,13 @@ class Visualizer:
         # 4. Handle pygame events (to prevent window freezing)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
+                return False, None
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return False
-        return True
+                    return False, None
+
+        keys = pygame.key.get_pressed()
+        return True, keys
 
     def close(self):
         """Close the pygame window."""

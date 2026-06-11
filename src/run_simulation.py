@@ -21,6 +21,11 @@ def main(
         "--list-scenarios",
         help="List all available scenarios and exit.",
     ),
+    manual: bool = typer.Option(
+        False,
+        "--manual",
+        help="Enable manual vehicle control with keyboard (W/A/S/D or arrow keys).",
+    ),
 ) -> None:
     """CLI entrypoint for running simulation scenarios."""
     if list_scenarios:
@@ -33,7 +38,7 @@ def main(
     try:
         config_data = load_config(config)
         scenario_config = get_scenario(config_data, scenario)
-        engine = SimulationEngine(config_data, scenario_config)
+        engine = SimulationEngine(config_data, scenario_config, manual=manual)
         engine.setup()
         engine.run()
     except ValueError as exc:
