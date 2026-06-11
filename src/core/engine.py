@@ -15,6 +15,7 @@ from utils.carla_utils import (
 )
 
 from controllers.vehicle_controller import VehicleController
+from controllers.keyboard_controller import KeyboardController
 from core.state import SimulationState
 from core.pedestrian import spawn_pedestrian
 from core.perception import PerceptionSystem
@@ -22,9 +23,10 @@ from core.perception import PerceptionSystem
 logger = get_logger(__name__)
 
 class SimulationEngine:
-    def __init__(self, config, scenario):
+    def __init__(self, config, scenario, manual=False):
         self.config = config
         self.scenario = scenario
+        self.manual = manual
         self.client = carla.Client(config["carla"]["host"], config["carla"]["port"])
         self.client.set_timeout(config["carla"]["timeout"])
         self.world = None
@@ -105,6 +107,9 @@ class SimulationEngine:
         self.sensor_manager.add_sensor(self.depth_camera)
         
         self.controller = VehicleController(self.vehicle)
+        self.keyboard = KeyboardController() if self.manual else None
+        if self.manual:
+            logger.info("Manual control enabled — use W/A/S/D or arrow keys.")
         
     def run(self):
         image_queue = queue.Queue()
@@ -131,12 +136,6 @@ class SimulationEngine:
                 current_vel = self.vehicle.get_velocity()
                 self.state.ego_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
 
-                # Ego update
-                if self.state.brake_needed:
-                    self.controller.apply_control(throttle=0.0, steer=0.0, brake=1.0)
-                else:
-                    self.controller.apply_throttle(self.scenario.target_speed_mps)
-                
                 bgr_array = image_to_bgr(image)
                 rgb_array = bgr_array[:, :, ::-1]
                 
@@ -144,9 +143,29 @@ class SimulationEngine:
                 self.perception.analyze_detections(self.state, self.scenario)
                 self.state.frame = rgb_array
 
+                # Visualize and capture key state
+                running = True
+                keys = None
                 if self.state.frame is not None:
-                    if not self.visualizer.update(self.state.frame, self.state.results, self.state.kalman_predictions):
-                        break
+                    running, keys = self.visualizer.update(
+                        self.state.frame, self.state.results, self.state.kalman_predictions
+                    )
+                if not running:
+                    break
+
+                # Ego update
+                if self.manual and keys is not None:
+                    ctrl = self.keyboard.parse(keys)
+                    # AEB override: automatic braking takes priority
+                    if self.state.brake_needed:
+                        ctrl["throttle"] = 0.0
+                        ctrl["brake"] = 1.0
+                    self.controller.apply_control(**ctrl)
+                else:
+                    if self.state.brake_needed:
+                        self.controller.apply_control(throttle=0.0, steer=0.0, brake=1.0)
+                    else:
+                        self.controller.apply_throttle(self.scenario.target_speed_mps)
                         
         except KeyboardInterrupt:
             logger.info("Simulation stopped by user.")

@@ -26,7 +26,8 @@ SmartVehicular-Project/
 │   ├── scenarios/           # Scenario loading and validation utilities
 │   │   └── moving.py
 │   ├── controllers/         # Vehicle control logic
-│   │   └── vehicle_controller.py
+│   │   ├── vehicle_controller.py
+│   │   └── keyboard_controller.py
 │   ├── sensors/             # Sensor management (camera, lidar, …)
 │   │   └── sensor_manager.py
 │   ├── utils/               # Shared utilities (logging, …)
@@ -39,6 +40,14 @@ SmartVehicular-Project/
 │   └── run_simulation.py  # Main CLI entry-point to launch moving scenarios
 ├── tests/                   # Unit tests (pytest)
 │   ├── test_collision.py
+│   ├── test_collision_edge_cases.py
+│   ├── test_config.py
+│   ├── test_kalman.py
+│   ├── test_keyboard_controller.py
+│   ├── test_perception.py
+│   ├── test_scenarios.py
+│   ├── test_sensor_manager.py
+│   ├── test_state.py
 │   └── test_utils.py
 ├── .gitignore
 ├── README.md
@@ -70,6 +79,24 @@ python src/run_simulation.py --list-scenarios
 ```
 
 Scenario definitions are configured under the `scenarios` section in `config/config.yaml`.
+
+## Manual control
+
+You can drive the vehicle manually using the keyboard with the `--manual` flag:
+
+```bash
+python src/run_simulation.py --scenario non-colliding-pedestrian --manual
+```
+
+| Key | Action |
+|---|---|
+| **W** / **↑** | Throttle |
+| **S** / **↓** | Brake |
+| **A** / **←** | Steer left |
+| **D** / **→** | Steer right |
+| **Space** | Hand-brake |
+
+The AEB (automatic emergency braking) system remains active in manual mode.
 
 ## Running tests
 
