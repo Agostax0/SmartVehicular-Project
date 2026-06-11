@@ -12,6 +12,7 @@ from utils.carla_utils import (
     spawn_camera,
     spawn_depth_camera,
     spawn_vehicle,
+    move_spectator_to
 )
 
 from controllers.vehicle_controller import VehicleController
@@ -42,6 +43,9 @@ class SimulationEngine:
     def setup(self):
         self.world = self.client.load_world(self.config["carla"]["map"])
         self.world.set_weather(self.scenario.weather_effects.toCarlaWeather())
+        spectator = self.world.get_spectator()
+
+
 
         settings = self.world.get_settings()
         settings.synchronous_mode = True
@@ -66,7 +70,9 @@ class SimulationEngine:
             autopilot=False,
         )
         logger.info("Vehicle spawned: %s at %s", self.vehicle.type_id, spawn_transform.location)
-        
+        move_spectator_to(spawn_transform, spectator)
+
+
         self.walkers = []
         if getattr(self.scenario, "walkers", None) is not None:
             for w_params in self.scenario.walkers:
