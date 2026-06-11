@@ -87,7 +87,7 @@ By compensating for ego-motion using the control inputs, the velocity estimation
 \subsection{Model Quality Evaluation}
 
 To evaluate the performance of the perception and tracking pipeline, we extracted the true 3D spatial parameters from the CARLA simulator's odometry and compared them against the estimates produced by the Kalman filter. Figure~\ref{fig:eval_results} illustrates the system's performance over a 150-frame sequence in the \texttt{colliding-pedestrian} scenario.
-
+\clearpage
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.9\textwidth]{assets/evaluation_results.png}
@@ -157,6 +157,27 @@ The validation ensures:
     \item Horizontal offset can be positive (right), negative (left), or zero (directly in front)
 \end{itemize}
 
+
+\section{Examples}
+These are some examples of the project's results:
+\clearpage
+\begin{figure}[h!]
+    \includegraphics[width=\textwidth]{two_pedestrian_complete.png}
+    \centering
+    \label{fig:two_pedestrian_crossing_complete}
+    \caption{Complete application, with Carla, PyGame window and Terminal output}
+\end{figure}
+
+In \ref{fig:two_pedestrian_crossing_complete} we can see the whole system running, actively braking to avoid collision with the pedestrian crossing, as seen by the vehicle's brake lights.
+\clearpage
+\begin{figure}[!h]
+    \includegraphics[width=\textwidth]{two_pedestrian_pygame.png}
+    \centering
+    \label{fig:two_pedestrian_crossing_pygame}
+    \caption{PyGame window}
+\end{figure}
+
+In \ref{fig:two_pedestrian_crossing_pygame}'s view, representing the vehicle's front RGB camera, with kalman's prediction we have enhanced the feed to show the future positions of the pedestrian.
 \section{Known Limitations}
 
 \begin{enumerate}
