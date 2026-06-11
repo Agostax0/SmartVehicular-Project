@@ -165,6 +165,24 @@ python src/run_simulation.py \\
 python src/run_simulation.py --config config/config.yaml
 \end{verbatim}
 
+\textbf{Manual Control:}
+
+To enable manual driving using the keyboard, append the \texttt{--manual} flag:
+
+\begin{verbatim}
+python src/run_simulation.py --scenario colliding-pedestrian --manual
+\end{verbatim}
+
+Key bindings:
+\begin{itemize}
+    \item \textbf{W / Up Arrow}: Throttle
+    \item \textbf{S / Down Arrow}: Brake
+    \item \textbf{A / Left Arrow}: Steer Left
+    \item \textbf{D / Right Arrow}: Steer Right
+    \item \textbf{Space}: Hand-brake
+\end{itemize}
+\textit{Note:} The Automatic Emergency Braking (AEB) system remains active in manual mode to prevent imminent collisions.
+
 \subsection{Configuration}
 
 The system is configured via a YAML file (\texttt{config/config.yaml}). The full configuration structure, including all available parameters for CARLA, sensors, and scenarios, is described in the Design chapter.
