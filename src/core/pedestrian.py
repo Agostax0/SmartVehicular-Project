@@ -129,7 +129,7 @@ def spawn_crowd(world, client, num_walkers, max_speed, seed=None):
     walker_results = client.apply_batch_sync(walker_batch, True)
     world.tick()
 
-    walker_ids = [r.actor_id for r in walker_results if r.error is None]
+    walker_ids = [r.actor_id for r in walker_results if not r.error]
     skipped = len(spawn_locations) - len(walker_ids)
     if skipped:
         logger.info("Crowd spawn: %d walker(s) skipped due to collisions.", skipped)
@@ -150,7 +150,7 @@ def spawn_crowd(world, client, num_walkers, max_speed, seed=None):
     all_actor_ids = []
     pairs = []  # (walker_id, controller_id)
     for wid, res in zip(walker_ids, controller_results):
-        if res.error is None:
+        if not res.error:
             pairs.append((wid, res.actor_id))
             all_actor_ids.append(wid)
             all_actor_ids.append(res.actor_id)
@@ -170,7 +170,7 @@ def spawn_crowd(world, client, num_walkers, max_speed, seed=None):
 
     # Start AI: bind controller to walker, give a first random destination.
     for w, c in zip(paired_walkers, paired_controllers):
-        c.start(w)
+        c.start()
         c.go_to_location(world.get_random_location_from_navigation())
         c.set_max_speed(max_speed)
 

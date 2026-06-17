@@ -2,7 +2,7 @@ carla:
   host: "localhost"
   port: 2000
   timeout: 20.0
-  map: "Town03"
+  map: "Town10HD_Opt"
 
 vehicle:
   blueprint: "vehicle.tesla.model3"
@@ -127,7 +127,7 @@ scenarios:
     target_speed_mps: 5.56
     prediction_future_frames: 30
     crowd_mode: true
-    crowd_size: 20
+    crowd_size: 50
     crowd_max_speed: 1.5
 
 
