@@ -55,6 +55,11 @@ class MovingScenario:
     walker_speed: float = 0.0
     walker_type: str = "pedestrian"
 
+    # Crowd mode: spawn many AI pedestrians that wander on the navmesh.
+    crowd_mode: bool = False
+    crowd_size: int = 0
+    crowd_max_speed: float = 1.5
+
     weather_effects: WeatherParams = WeatherParams()
 
 def _parse_float(raw_value: Any, field_name: str, scenario_name: str) -> float:
@@ -107,6 +112,30 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
         if not isinstance(enable_aeb, bool):
             raise ValueError(
                 f"Scenario '{scenario_name}' has invalid 'enable_aeb': expected a boolean."
+            )
+
+        crowd_mode = raw_scenario.get("crowd_mode", False)
+        if not isinstance(crowd_mode, bool):
+            raise ValueError(
+                f"Scenario '{scenario_name}' has invalid 'crowd_mode': expected a boolean."
+            )
+
+        crowd_size = raw_scenario.get("crowd_size", 0)
+        if isinstance(crowd_size, bool) or not isinstance(crowd_size, int):
+            raise ValueError(
+                f"Scenario '{scenario_name}' has invalid 'crowd_size': expected an integer."
+            )
+        if crowd_size < 0:
+            raise ValueError(
+                f"Scenario '{scenario_name}' has invalid 'crowd_size': expected >= 0."
+            )
+
+        crowd_max_speed = _parse_float(
+            raw_scenario.get("crowd_max_speed", 1.5), "crowd_max_speed", scenario_name
+        )
+        if crowd_max_speed <= 0.0:
+            raise ValueError(
+                f"Scenario '{scenario_name}' has invalid 'crowd_max_speed': expected > 0."
             )
 
         walkers_raw = raw_scenario.get("walkers")
@@ -168,49 +197,55 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
                 w_dist, w_h, w_off, w_spd = 0.0, 0.0, 0.0, 0.0
                 w_type = "pedestrian"
         else:
-            required_fields = [
-                "walker_distance_from_vehicle",
-                "walker_height",
-                "walker_horizontal_offset",
-                "walker_speed",
-            ]
-            missing_fields = [field for field in required_fields if field not in raw_scenario]
-            if missing_fields:
-                raise ValueError(
-                    f"Scenario '{scenario_name}' is missing required fields: "
-                    f"{', '.join(sorted(missing_fields))}"
-                )
+            # Crowd mode spawns pedestrians on the navmesh, so the legacy
+            # walker_* fields are not required.
+            if crowd_mode:
+                w_dist, w_h, w_off, w_spd = 0.0, 0.0, 0.0, 0.0
+                w_type = "pedestrian"
+            else:
+                required_fields = [
+                    "walker_distance_from_vehicle",
+                    "walker_height",
+                    "walker_horizontal_offset",
+                    "walker_speed",
+                ]
+                missing_fields = [field for field in required_fields if field not in raw_scenario]
+                if missing_fields:
+                    raise ValueError(
+                        f"Scenario '{scenario_name}' is missing required fields: "
+                        f"{', '.join(sorted(missing_fields))}"
+                    )
 
-            walker_speed = _parse_float(
-                raw_scenario["walker_speed"], "walker_speed", scenario_name
-            )
-            if walker_speed <= 0.0:
-                raise ValueError(
-                    f"Scenario '{scenario_name}' has invalid 'walker_speed': expected > 0."
+                walker_speed = _parse_float(
+                    raw_scenario["walker_speed"], "walker_speed", scenario_name
                 )
+                if walker_speed <= 0.0:
+                    raise ValueError(
+                        f"Scenario '{scenario_name}' has invalid 'walker_speed': expected > 0."
+                    )
 
-            w_dist = _parse_float(
-                raw_scenario["walker_distance_from_vehicle"],
-                "walker_distance_from_vehicle",
-                scenario_name,
-            )
-            w_h = _parse_float(raw_scenario["walker_height"], "walker_height", scenario_name)
-            w_off = _parse_float(
-                raw_scenario["walker_horizontal_offset"],
-                "walker_horizontal_offset",
-                scenario_name,
-            )
-            w_spd = walker_speed
-            w_type = raw_scenario.get("walker_type", "pedestrian")
-            walkers.append(
-                WalkerParams(
-                    walker_distance_from_vehicle=w_dist,
-                    walker_height=w_h,
-                    walker_horizontal_offset=w_off,
-                    walker_speed=w_spd,
-                    walker_type=w_type,
+                w_dist = _parse_float(
+                    raw_scenario["walker_distance_from_vehicle"],
+                    "walker_distance_from_vehicle",
+                    scenario_name,
                 )
-            )
+                w_h = _parse_float(raw_scenario["walker_height"], "walker_height", scenario_name)
+                w_off = _parse_float(
+                    raw_scenario["walker_horizontal_offset"],
+                    "walker_horizontal_offset",
+                    scenario_name,
+                )
+                w_spd = walker_speed
+                w_type = raw_scenario.get("walker_type", "pedestrian")
+                walkers.append(
+                    WalkerParams(
+                        walker_distance_from_vehicle=w_dist,
+                        walker_height=w_h,
+                        walker_horizontal_offset=w_off,
+                        walker_speed=w_spd,
+                        walker_type=w_type,
+                    )
+                )
 
         if "target_speed_mps" not in raw_scenario or "prediction_future_frames" not in raw_scenario:
             missing_top = [
@@ -271,6 +306,9 @@ def load_scenarios(config: Dict[str, Any]) -> Dict[str, MovingScenario]:
             walker_horizontal_offset=w_off,
             walker_speed=w_spd,
             walker_type=w_type,
+            crowd_mode=crowd_mode,
+            crowd_size=crowd_size,
+            crowd_max_speed=crowd_max_speed,
             weather_effects=weather_parameters
         )
 

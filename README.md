@@ -98,6 +98,61 @@ python src/run_simulation.py --scenario non-colliding-pedestrian --manual
 
 The AEB (automatic emergency braking) system remains active in manual mode.
 
+## Live demo: interactive crowd
+
+The `interactive-crowd` scenario populates Town03 with a large number of
+AI-driven pedestrians that wander the streets and cross the roads at random,
+while you drive the ego vehicle manually and the AEB system stays active to
+protect pedestrians.
+
+### Run it
+
+1. Start the CARLA server (it loads `Town03` automatically via the config).
+
+   ```bash
+   # Example: packaged server
+   ./CarlaUE4.sh -quality-level=Low
+   # or Docker:
+   docker run --privileged --gpus all --net=host -e CARLA_SERVER_ARGS="-quality-level=Low" carlasim/carla:0.9.13 /bin/bash ./CarlaUE4.sh
+   ```
+
+2. Activate the environment and launch the simulation with manual control:
+
+   ```bash
+   conda activate carla-env
+   python src/run_simulation.py --scenario interactive-crowd --manual
+   ```
+
+### Controls
+
+| Key | Action |
+|---|---|
+| **W** / **↑** | Throttle |
+| **S** / **↓** | Brake |
+| **A** / **←** | Steer left |
+| **D** / **→** | Steer right |
+| **Space** | Hand-brake |
+
+While you drive, the perception pipeline (YOLOv8 + Kalman filter + depth
+camera) continuously tracks pedestrians. If a pedestrian is predicted to
+enter the vehicle's path (TTC ≤ 5 s with lateral overlap), the **AEB takes
+priority over your input**, zeroing the throttle and applying full brake —
+even if you are holding the throttle. Drive toward a crossing pedestrian to
+see the system intervene in real time.
+
+### Tuning the crowd
+
+The scenario is configurable in `config/config.yaml`:
+
+```yaml
+interactive-crowd:
+  crowd_mode: true
+  crowd_size: 50        # number of AI pedestrians
+  crowd_max_speed: 1.5  # walking speed in m/s
+```
+
+Increase `crowd_size` for a denser city, or lower it if the frame rate drops.
+
 ## Running tests
 
 To run the unit tests:

@@ -12,7 +12,7 @@ simulation:
   max_steps: 1000
   fps: 20
   sync_mode: true
-  default_scenario: "mixed-pedestrian-cyclist"
+  default_scenario: "interactive-crowd"
 
 scenarios:
   non-colliding-pedestrian:
@@ -121,6 +121,14 @@ scenarios:
       fog_density: 100
       fog_distance: 5
       road_wetness: 100
+
+  interactive-crowd:
+    description: "Live demo: ~50 AI pedestrians wandering Town03, manual driving with active AEB."
+    target_speed_mps: 5.56
+    prediction_future_frames: 30
+    crowd_mode: true
+    crowd_size: 20
+    crowd_max_speed: 1.5
 
 
 sensors:

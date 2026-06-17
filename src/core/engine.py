@@ -18,7 +18,7 @@ from utils.carla_utils import (
 from controllers.vehicle_controller import VehicleController
 from controllers.keyboard_controller import KeyboardController
 from core.state import SimulationState
-from core.pedestrian import spawn_pedestrian
+from core.pedestrian import spawn_crowd, navigate_crowd, cleanup_crowd, spawn_pedestrian
 from core.perception import PerceptionSystem
 
 logger = get_logger(__name__)
@@ -34,6 +34,7 @@ class SimulationEngine:
         self.vehicle = None
         self.walker = None
         self.walkers = []
+        self.walker_controllers = []
         self.sensor_manager = None
         self.visualizer = None
         self.detector = ObjectDetector()
@@ -74,7 +75,15 @@ class SimulationEngine:
 
 
         self.walkers = []
-        if getattr(self.scenario, "walkers", None) is not None:
+        self.walker_controllers = []
+        if getattr(self.scenario, "crowd_mode", False):
+            self.walkers, self.walker_controllers = spawn_crowd(
+                self.world,
+                self.client,
+                num_walkers=self.scenario.crowd_size,
+                max_speed=self.scenario.crowd_max_speed,
+            )
+        elif getattr(self.scenario, "walkers", None) is not None:
             for w_params in self.scenario.walkers:
                 w_actor = spawn_pedestrian(self.world, spawn_transform, w_params)
                 if w_actor is not None:
@@ -125,10 +134,19 @@ class SimulationEngine:
         self.camera.listen(image_queue.put)
         
         logger.info("Starting simulation loop. Press Ctrl+C or close window to stop.")
-        
+
+        crowd_mode = getattr(self.scenario, "crowd_mode", False)
+        navigate_interval = max(1, self.config["simulation"].get("fps", 20) * 10)  # ~10s
+        tick_count = 0
+
         try:
             while True:
                 self.world.tick()
+                tick_count += 1
+
+                # Keep the crowd in perpetual motion by re-issuing destinations.
+                if crowd_mode and self.walker_controllers and tick_count % navigate_interval == 0:
+                    navigate_crowd(self.world, self.walker_controllers)
                 
                 try:
                     image = image_queue.get(timeout=2.0)
@@ -190,7 +208,14 @@ class SimulationEngine:
             self.visualizer.close()
         if self.sensor_manager is not None:
             self.sensor_manager.destroy()
-        actors_to_destroy = list(self.walkers) if hasattr(self, "walkers") else []
+
+        # Crowd mode tears down controllers and walkers together; in legacy
+        # mode there are no controllers and walkers are destroyed below.
+        if getattr(self, "walker_controllers", None):
+            cleanup_crowd(self.world, self.walkers, self.walker_controllers)
+            actors_to_destroy = []
+        else:
+            actors_to_destroy = list(self.walkers) if hasattr(self, "walkers") else []
         if self.vehicle is not None:
             actors_to_destroy.append(self.vehicle)
         safe_destroy(actors_to_destroy)
