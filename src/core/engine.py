@@ -1,6 +1,7 @@
 import carla
 import queue
 import numpy as np
+import pygame
 
 from utils.logger import get_logger
 from utils.detector import ObjectDetector
@@ -17,6 +18,7 @@ from utils.carla_utils import (
 
 from controllers.vehicle_controller import VehicleController
 from controllers.keyboard_controller import KeyboardController
+from controllers.steering_wheel_controller import SteeringWheelController
 from core.state import SimulationState
 from core.pedestrian import spawn_crowd, navigate_crowd, cleanup_crowd, spawn_pedestrian
 from core.perception import PerceptionSystem
@@ -123,8 +125,24 @@ class SimulationEngine:
         
         self.controller = VehicleController(self.vehicle)
         self.keyboard = KeyboardController() if self.manual else None
+        self.steering_wheel = None
         if self.manual:
-            logger.info("Manual control enabled — use W/A/S/D or arrow keys.")
+            # Try to connect a USB steering wheel; fall back to keyboard-only
+            # if none is detected. pygame.init() has already been called by the
+            # Visualizer at this point, so joystick API is available.
+            wheel_cfg = self.config.get("controllers", {}).get("steering_wheel", {})
+            self.steering_wheel = SteeringWheelController(
+                steer_axis=wheel_cfg.get("steer_axis", 0),
+                throttle_axis=wheel_cfg.get("throttle_axis", 2),
+                brake_axis=wheel_cfg.get("brake_axis", 1),
+                deadzone=wheel_cfg.get("deadzone", 0.02),
+                hand_brake_button=wheel_cfg.get("hand_brake_button"),
+            )
+            if self.steering_wheel.is_connected:
+                logger.info("Manual control — steering wheel + pedals. "
+                            "Keyboard Space = hand-brake fallback.")
+            else:
+                logger.info("Manual control enabled — use W/A/S/D or arrow keys.")
         
     def run(self):
         image_queue = queue.Queue()
@@ -189,7 +207,14 @@ class SimulationEngine:
 
                 # Ego update
                 if self.manual and keys is not None:
-                    ctrl = self.keyboard.parse(keys)
+                    if self.steering_wheel is not None and self.steering_wheel.is_connected:
+                        # Wheel provides analog steer, throttle, brake.
+                        # Keyboard Space still serves as hand-brake fallback.
+                        ctrl = self.steering_wheel.parse(keys)
+                        if keys[pygame.K_SPACE]:
+                            ctrl["hand_brake"] = True
+                    else:
+                        ctrl = self.keyboard.parse(keys)
                     # AEB override: automatic braking takes priority
                     if self.state.brake_needed:
                         ctrl["throttle"] = 0.0
