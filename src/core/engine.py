@@ -160,6 +160,16 @@ class SimulationEngine:
                 current_vel = self.vehicle.get_velocity()
                 self.state.ego_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
 
+                # Forward (depth) component of the ego velocity in the camera
+                # frame: project the world velocity onto the vehicle's forward
+                # vector. Equals ego_speed when driving straight, drops when
+                # braking/turning — which is what makes Kalman ego-motion
+                # compensation correct at high speed and under braking.
+                ego_tf = self.vehicle.get_transform()
+                fwd = ego_tf.get_forward_vector()
+                self.state.ego_vz = current_vel.x * fwd.x + current_vel.y * fwd.y + current_vel.z * fwd.z
+                self.state.ego_vx = 0.0
+
                 bgr_array = image_to_bgr(image)
                 rgb_array = bgr_array[:, :, ::-1]
                 

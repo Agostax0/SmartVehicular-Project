@@ -36,8 +36,8 @@ class TrajectoryKalmanFilter:
         self.kf.processNoiseCov = np.array([
             [1e-2, 0.0, 0.0, 0.0],
             [0.0, 1e-2, 0.0, 0.0],
-            [0.0, 0.0, 5e-2, 0.0],
-            [0.0, 0.0, 0.0, 5e-2]
+            [0.0, 0.0, 1e-1, 0.0],
+            [0.0, 0.0, 0.0, 1e-1]
         ], np.float32)
         
         # 4. Measurement noise matrix
