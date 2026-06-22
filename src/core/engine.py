@@ -173,6 +173,11 @@ class SimulationEngine:
                     logger.warning("Timeout waiting for sensor data.")
                     continue
 
+                if self.state.last_sensor_timestamp is not None:
+                    dt = image.timestamp - self.state.last_sensor_timestamp
+                    self.state.sensor_dt = dt if dt > 0.0 else None
+                self.state.last_sensor_timestamp = image.timestamp
+
                 self.state.depth_array = self.perception.process_depth(depth_image)
 
                 current_vel = self.vehicle.get_velocity()

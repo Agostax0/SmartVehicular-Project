@@ -30,6 +30,16 @@ def test_initialization_custom_dt():
     assert kf.kf.transitionMatrix[1, 3] == pytest.approx(0.1)
 
 
+def test_predict_update_refreshes_dt_dependent_matrices():
+    """Real-time updates can pass the actual elapsed frame time."""
+    kf = TrajectoryKalmanFilter(dt=0.05)
+    kf.predict_update(0.0, 0.0, dt=0.08)
+
+    assert kf.dt == pytest.approx(0.08)
+    assert kf.kf.transitionMatrix[0, 2] == pytest.approx(0.08)
+    assert kf.kf.controlMatrix[0, 0] == pytest.approx(-0.08)
+
+
 # ── First call behaviour ───────────────────────────────────────────────────
 
 
@@ -136,10 +146,8 @@ def test_ego_motion_compensation():
         est_no = kf_no_ego.predict_update(pos_x, pos_z, ego_vx=0.0, ego_vz=0.0)
         est_ego = kf_with_ego.predict_update(pos_x, pos_z, ego_vx=ego_vx, ego_vz=ego_vz)
 
-    # The ego-compensated filter should produce different position estimates
-    assert est_no[0] != pytest.approx(est_ego[0], abs=1e-3), (
-        "Ego-motion compensation should shift the position estimate"
-    )
+    assert est_no[2] == pytest.approx(0.0, abs=0.05)
+    assert est_ego[2] == pytest.approx(ego_vx, abs=0.05)
 
 
 # ── Filter independence ────────────────────────────────────────────────────

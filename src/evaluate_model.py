@@ -34,10 +34,19 @@ class EvaluatorEngine(SimulationEngine):
                 except queue.Empty:
                     continue
 
+                if self.state.last_sensor_timestamp is not None:
+                    dt = image.timestamp - self.state.last_sensor_timestamp
+                    self.state.sensor_dt = dt if dt > 0.0 else None
+                self.state.last_sensor_timestamp = image.timestamp
+
                 self.state.depth_array = self.perception.process_depth(depth_image)
 
                 current_vel = self.vehicle.get_velocity()
                 self.state.ego_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
+                ego_tf = self.vehicle.get_transform()
+                fwd = ego_tf.get_forward_vector()
+                self.state.ego_vz = current_vel.x * fwd.x + current_vel.y * fwd.y + current_vel.z * fwd.z
+                self.state.ego_vx = 0.0
 
                 bgr_array = image_to_bgr(image)
                 rgb_array = bgr_array[:, :, ::-1]

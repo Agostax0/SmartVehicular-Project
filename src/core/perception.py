@@ -19,6 +19,24 @@ class PerceptionSystem:
         normalized_depth = (R + G * 256.0 + B * 256.0 * 256.0) / (256.0 * 256.0 * 256.0 - 1.0)
         return 1000.0 * normalized_depth
 
+    def _box_depth(self, depth_array, x1, y1, x2, y2, cx, cy):
+        cx_int = max(0, min(self.img_w - 1, int(cx)))
+        cy_int = max(0, min(self.img_h - 1, int(cy)))
+        fallback = float(depth_array[cy_int, cx_int])
+
+        roi_w = max(2, int((x2 - x1) * 0.35))
+        roi_h = max(2, int((y2 - y1) * 0.35))
+        left = max(0, cx_int - roi_w // 2)
+        right = min(self.img_w, cx_int + roi_w // 2 + 1)
+        top = max(0, cy_int - roi_h // 2)
+        bottom = min(self.img_h, cy_int + roi_h // 2 + 1)
+
+        roi = depth_array[top:bottom, left:right]
+        valid = roi[np.isfinite(roi) & (roi > 0.0)]
+        if valid.size:
+            return float(np.median(valid))
+        return fallback if fallback > 0.0 else 10.0
+
     def analyze_detections(self, state, scenario):
         predictions = {}
         state.brake_needed = False
@@ -36,10 +54,7 @@ class PerceptionSystem:
                 
                 Z = 10.0 # fallback
                 if state.depth_array is not None:
-                    cy_int = max(0, min(self.img_h - 1, int(cy)))
-                    cx_int = max(0, min(self.img_w - 1, int(cx)))
-                    Z = float(state.depth_array[cy_int, cx_int])
-                    if Z <= 0.0: Z = 10.0
+                    Z = self._box_depth(state.depth_array, x1, y1, x2, y2, cx, cy)
                     
                 X = (cx - self.img_w / 2.0) * Z / self.f_length
                 
@@ -47,7 +62,8 @@ class PerceptionSystem:
                     state.kalman_filters[obj_id] = TrajectoryKalmanFilter(dt=1.0/self.fps)
                 
                 est_x, est_z, vel_x, vel_z = state.kalman_filters[obj_id].predict_update(
-                    X, Z, ego_vx=state.ego_vx, ego_vz=state.ego_vz
+                    X, Z, ego_vx=state.ego_vx, ego_vz=state.ego_vz,
+                    dt=getattr(state, "sensor_dt", None)
                 )
 
                 # Relative velocities in the camera frame (pedestrian minus ego).
@@ -60,7 +76,6 @@ class PerceptionSystem:
                 rel_vz = vel_z - state.ego_vz
 
                 risk, msg, ttc = check_collision_risk(est_x, est_z, rel_vx, rel_vz)
-                print(f"{risk}, {msg}, {ttc}")
                 if risk:
                     state.brake_needed = True
 

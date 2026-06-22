@@ -45,6 +45,9 @@ def _make_state(results=None, depth_array=None, ego_speed=0.0):
     state.results = results
     state.depth_array = depth_array
     state.ego_speed = ego_speed
+    state.ego_vx = 0.0
+    state.ego_vz = ego_speed
+    state.sensor_dt = None
     state.kalman_filters = {}
     state.kalman_predictions = {}
     state.brake_needed = False
@@ -121,6 +124,15 @@ def test_process_depth_converts_raw_data():
     normalized = (r_val + g_val * 256.0 + b_val * 256.0 * 256.0) / (256.0**3 - 1.0)
     expected = 1000.0 * normalized
     np.testing.assert_allclose(depth, expected, rtol=1e-5)
+
+
+def test_box_depth_uses_median_roi_instead_of_single_noisy_pixel():
+    """Depth at the exact box center can be a noisy outlier."""
+    ps = PerceptionSystem(_make_config(width=20, height=20))
+    depth = np.full((20, 20), 12.0, dtype=np.float32)
+    depth[10, 10] = 40.0
+
+    assert ps._box_depth(depth, 5, 5, 15, 15, 10, 10) == pytest.approx(12.0)
 
 
 # ---------------------------------------------------------------------------

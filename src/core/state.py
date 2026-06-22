@@ -21,4 +21,6 @@ class SimulationState:
         # one (kept at 0 by default — see engine.run).
         self.ego_vx = 0.0
         self.ego_vz = 0.0
+        self.sensor_dt = None
+        self.last_sensor_timestamp = None
         self.brake_needed = False
