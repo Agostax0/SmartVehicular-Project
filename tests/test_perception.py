@@ -191,6 +191,7 @@ def test_analyze_detections_creates_kalman_filter(mock_kf_cls, mock_collision):
     kf_instance = MagicMock()
     kf_instance.predict_update.return_value = (0.0, 10.0, 0.0, 5.0)
     kf_instance.dt = 1.0 / 20
+    kf_instance.update_count = 3
     mock_kf_cls.return_value = kf_instance
 
     ps.analyze_detections(state, scenario)
@@ -224,9 +225,40 @@ def test_analyze_detections_sets_brake_for_collision(mock_kf_cls, mock_collision
     kf_instance = MagicMock()
     kf_instance.predict_update.return_value = (0.0, 15.0, 0.0, 10.0)
     kf_instance.dt = 1.0 / 20
+    kf_instance.update_count = 3
     mock_kf_cls.return_value = kf_instance
 
     ps.analyze_detections(state, scenario)
 
     assert state.brake_needed is True
     mock_collision.assert_called_once()
+
+
+@patch("src.core.perception.check_collision_risk", return_value=(False, "", 999.0))
+@patch("src.core.perception.TrajectoryKalmanFilter")
+def test_analyze_detections_waits_before_showing_kalman_prediction(mock_kf_cls, mock_collision):
+    """Early velocity estimates are too unstable for future-box projection."""
+    ps = PerceptionSystem(_make_config())
+
+    box = MagicMock()
+    box.xyxy = [np.array([100.0, 150.0, 200.0, 250.0])]
+
+    boxes = MagicMock()
+    boxes.__iter__ = MagicMock(return_value=iter([box]))
+    boxes.__bool__ = MagicMock(return_value=True)
+    boxes.id = [7]
+
+    results = MagicMock()
+    results.boxes = boxes
+    state = _make_state(results=results, depth_array=None, ego_speed=5.0)
+    scenario = _make_scenario(prediction_future_frames=10)
+
+    kf_instance = MagicMock()
+    kf_instance.predict_update.return_value = (0.0, 10.0, 0.0, 5.0)
+    kf_instance.dt = 1.0 / 20
+    kf_instance.update_count = 1
+    mock_kf_cls.return_value = kf_instance
+
+    ps.analyze_detections(state, scenario)
+
+    assert state.kalman_predictions == {}

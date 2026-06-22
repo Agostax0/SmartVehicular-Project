@@ -60,6 +60,7 @@ def test_first_call_sets_initialized():
     assert kf.initialized is False
     kf.predict_update(1.0, 2.0)
     assert kf.initialized is True
+    assert kf.update_count == 1
 
 
 # ── Return types ────────────────────────────────────────────────────────────
@@ -74,6 +75,7 @@ def test_second_call_returns_four_floats():
     assert len(result) == 4
     for value in result:
         assert isinstance(value, float), f"Expected float, got {type(value)}"
+    assert kf.update_count == 2
 
 
 # ── Stationary target ──────────────────────────────────────────────────────

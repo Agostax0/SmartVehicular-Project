@@ -39,6 +39,7 @@ class TrajectoryKalmanFilter:
         self._set_dt(dt)
         
         self.initialized = False
+        self.update_count = 0
 
     def _set_dt(self, dt):
         # ponytail: clamp long pauses; reset the filter if real stalls matter.
@@ -102,6 +103,7 @@ class TrajectoryKalmanFilter:
             self.kf.statePost = np.array([[m_x], [m_z], [0.0], [0.0]], np.float32)
             self.kf.statePre = np.array([[m_x], [m_z], [0.0], [0.0]], np.float32)
             self.initialized = True
+            self.update_count = 1
             return float(m_x), float(m_z), 0.0, 0.0
             
         # 1: PREDICT
@@ -120,5 +122,6 @@ class TrajectoryKalmanFilter:
         est_z = float(estimated_state[1, 0])
         vel_x = float(estimated_state[2, 0])
         vel_z = float(estimated_state[3, 0])
+        self.update_count += 1
         
         return est_x, est_z, vel_x, vel_z

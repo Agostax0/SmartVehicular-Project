@@ -80,13 +80,19 @@ class PerceptionSystem:
                     state.brake_needed = True
 
                 future_frames = scenario.prediction_future_frames
-                dt = state.kalman_filters[obj_id].dt
+                kf = state.kalman_filters[obj_id]
+                dt = kf.dt
+
+                if getattr(kf, "update_count", 0) < 3:
+                    continue
 
                 pred_X = est_x + rel_vx * dt * future_frames
                 pred_Z = est_z + rel_vz * dt * future_frames
 
-                # Guard against division-by-zero / behind-camera projections.
-                pred_Z_safe = max(pred_Z, 0.5)
+                if pred_Z <= 1.0:
+                    continue
+
+                pred_Z_safe = pred_Z
 
                 pred_cx = (pred_X * self.f_length) / pred_Z_safe + self.img_w / 2.0
 

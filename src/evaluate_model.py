@@ -45,8 +45,9 @@ class EvaluatorEngine(SimulationEngine):
                 self.state.ego_speed = np.sqrt(current_vel.x**2 + current_vel.y**2 + current_vel.z**2)
                 ego_tf = self.vehicle.get_transform()
                 fwd = ego_tf.get_forward_vector()
+                right = ego_tf.get_right_vector()
                 self.state.ego_vz = current_vel.x * fwd.x + current_vel.y * fwd.y + current_vel.z * fwd.z
-                self.state.ego_vx = 0.0
+                self.state.ego_vx = current_vel.x * right.x + current_vel.y * right.y + current_vel.z * right.z
 
                 bgr_array = image_to_bgr(image)
                 rgb_array = bgr_array[:, :, ::-1]
