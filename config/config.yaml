@@ -1,7 +1,7 @@
 carla:
   host: "localhost"
   port: 2000
-  timeout: 20.0
+  timeout: 30.0
   map: "Town03"
 
 vehicle:
